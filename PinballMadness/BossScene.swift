@@ -12,6 +12,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     var bumperRight: SKSpriteNode!
     
     var ball: SKSpriteNode!
+    var dupBall: SKSpriteNode!
     var ballSkin: String = "Pinball"
     var dupBallThere: Bool = false
     var jumpBoostAvailable: Bool = true
@@ -100,11 +101,22 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         hpLabelBoss.text = String(bossHealth)
         hpLabelPlayer.text = String(ballHealth)
         
-        timeSurvivedValue += 1 / 30.0
+        timeSurvivedValue += 1 / 60.0
 
         print("Boss " + String(Int(timeSurvivedValue)))
         if ballHealth <= 0 {
             losePublisher.send()
+        }
+        
+        if dupBallThere == false { return }
+        guard let bodyBallDup = dupBall.physicsBody else { return }
+
+        let speedDupBall = hypot(bodyBallDup.velocity.dx, bodyBallDup.velocity.dy)
+        let maxSpeedDupBall: CGFloat = 800
+
+        if speedDupBall > maxSpeedDupBall {
+            let scale = maxSpeedDupBall / speedDupBall
+            bodyBallDup.velocity = CGVector(dx: bodyBallDup.velocity.dx * scale, dy: bodyBallDup.velocity.dy * scale)
         }
     }
     
@@ -124,7 +136,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         addTrianglesRight(at: CGPoint(x:400, y: -11))
         addCeiling()
         
-        addBall()
+        addBall(position: CGPoint(x: 50, y: 500))
         if dupBallThere {
             addDupBall()
         }
@@ -173,9 +185,9 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         self.run(repeatForever, withKey: "spawnLoop")
 
-        addBackground(position: CGPoint(x: size.width / 4, y: 805))
+        addBackground(position: CGPoint(x: size.width / 4, y: 736))
         hpLabelBoss = SKLabelNode(fontNamed: "Copperplate-Bold")
-        hpLabelBoss.fontSize = 28
+        hpLabelBoss.fontSize = 23
         if bossHealth >= 400 {
             hpLabelBoss.fontColor = SKColor.green.withAlphaComponent(0.75)
         }
@@ -188,23 +200,23 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         hpLabelBoss.zPosition = 1001
         hpLabelBoss.text = String(bossHealth)
-        hpLabelBoss.position = CGPoint(x: size.width / 4, y: hpBackground.position.y - 18)
+        hpLabelBoss.position = CGPoint(x: size.width / 4, y: hpBackground.position.y - 15)
         hpLabelBoss.name = "hpBoss"
         
         hpCategoryBoss = SKLabelNode(fontNamed: "Copperplate-Bold")
-        hpCategoryBoss.fontSize = 23
+        hpCategoryBoss.fontSize = 20
         hpCategoryBoss.zPosition = 1001
         hpCategoryBoss.fontColor = SKColor.red.withAlphaComponent(0.75)
-        hpCategoryBoss.position = CGPoint(x: hpLabelBoss.position.x, y: hpLabelBoss.position.y + 30)
+        hpCategoryBoss.position = CGPoint(x: hpLabelBoss.position.x, y: hpLabelBoss.position.y + 20)
         hpCategoryBoss.text = "Boss:"
         hpCategoryBoss.name = "hpCategoryBoss"
         
         addChild(hpCategoryBoss)
         addChild(hpLabelBoss)
         
-        addBackground(position: CGPoint(x: 3 * size.width / 4, y: 805))
+        addBackground(position: CGPoint(x: 3 * size.width / 4, y: 736))
         hpLabelPlayer = SKLabelNode(fontNamed: "Copperplate-Bold")
-        hpLabelPlayer.fontSize = 28
+        hpLabelPlayer.fontSize = 22
         if ballHealth >= 400 {
             hpLabelPlayer.fontColor = SKColor.green.withAlphaComponent(0.75)
         }
@@ -217,14 +229,14 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         hpLabelPlayer.zPosition = 1001
         hpLabelPlayer.text = String(ballHealth)
-        hpLabelPlayer.position = CGPoint(x: 3 * size.width / 4, y: hpBackground.position.y - 18)
+        hpLabelPlayer.position = CGPoint(x: 3 * size.width / 4, y: hpBackground.position.y - 15)
         hpLabelPlayer.name = "hpPlayer"
         
         hpCategoryPlayer = SKLabelNode(fontNamed: "Copperplate-Bold")
-        hpCategoryPlayer.fontSize = 20
+        hpCategoryPlayer.fontSize = 15
         hpCategoryPlayer.zPosition = 1001
         hpCategoryPlayer.fontColor = SKColor.green.withAlphaComponent(0.75)
-        hpCategoryPlayer.position = CGPoint(x: hpLabelPlayer.position.x, y: hpLabelPlayer.position.y + 30)
+        hpCategoryPlayer.position = CGPoint(x: hpLabelPlayer.position.x, y: hpLabelPlayer.position.y + 20)
         hpCategoryPlayer.text = "Player:"
         hpCategoryPlayer.name = "hpCategory"
         
@@ -233,7 +245,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func addBackground(position: CGPoint){
-        hpBackground = SKShapeNode(rectOf: CGSize(width: 100, height: 60), cornerRadius: 10)
+        hpBackground = SKShapeNode(rectOf: CGSize(width: 100, height: 40), cornerRadius: 10)
         hpBackground.name = "timeBackground"
         hpBackground.fillColor = SKColor.black.withAlphaComponent(1)
         hpBackground.strokeColor = .black
@@ -325,7 +337,6 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
             ballPhysicsBody.applyImpulse(reverseImpulse)
         }
     }
-    
     
     func bumperBallCollision(_ contact: SKPhysicsContact){
         let ballCategory = PhysicsCategory.ball
@@ -442,7 +453,22 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         }
         
         if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.loseBox {
-            losePublisher.send()
+            if dupBallThere {
+                for node in self.children {
+                    if node.name == "Pinball"{
+                        node.removeFromParent()
+                    }
+                }
+                addBall(position: dupBall.position)
+                for node in self.children {
+                    if node.name == "PinballDup"{
+                        node.removeFromParent()
+                    }
+                }
+                dupBallThere = false
+            } else {
+                losePublisher.send()
+            }
         }
     }
     
@@ -533,11 +559,11 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         addChild(meteor)
     }
     
-    func addBall() {
+    func addBall(position: CGPoint) {
         ball = SKSpriteNode(imageNamed: ballSkin)
         ball.name = "Pinball"
         ball.size = CGSize(width: 55, height: 55)
-        ball.position = CGPoint(x: 50, y: 500)
+        ball.position = position
         ball.physicsBody = SKPhysicsBody(circleOfRadius: ball.size.width / 2)
         ball.zPosition = -1
         ball.physicsBody?.restitution = 0.5
@@ -554,30 +580,29 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func addDupBall() {
-        ball = SKSpriteNode(imageNamed: "PinballDup")
-        ball.name = "PinballDup"
-        ball.size = CGSize(width: 55, height: 55)
-        ball.position = CGPoint(x: 350, y: 500)
-        ball.physicsBody = SKPhysicsBody(circleOfRadius: ball.size.width / 2)
-        ball.physicsBody?.applyImpulse(CGVector(dx: 20, dy: 20))
-        ball.zPosition = -1
-        ball.physicsBody?.restitution = 0.5
-        ball.physicsBody?.friction = 0.5
-        ball.physicsBody?.linearDamping = 0.2
-        ball.physicsBody?.angularDamping = 0.5
-        ball.physicsBody?.isDynamic = true
-        ball.physicsBody?.usesPreciseCollisionDetection = true
-        ball.physicsBody?.categoryBitMask = PhysicsCategory.ballDup
-        ball.physicsBody?.collisionBitMask = PhysicsCategory.triangleWall | PhysicsCategory.flipper | PhysicsCategory.bumper | PhysicsCategory.rectangleWall | PhysicsCategory.ball | PhysicsCategory.ballDup
-        ball.physicsBody?.contactTestBitMask = PhysicsCategory.triangleWall | PhysicsCategory.flipper | PhysicsCategory.bumper | PhysicsCategory.rectangleWall | PhysicsCategory.itemDupli | PhysicsCategory.itemPun | PhysicsCategory.ball | PhysicsCategory.itemFlip | PhysicsCategory.fistAttackLeft | PhysicsCategory.fistLauncher | PhysicsCategory.fistAttackRight | PhysicsCategory.itemBoss | PhysicsCategory.bossEnt | PhysicsCategory.bossAttack | PhysicsCategory.loseBox
+        dupBall = SKSpriteNode(imageNamed: "PinballDup")
+        dupBall.name = "PinballDup"
+        dupBall.size = CGSize(width: 55, height: 55)
+        dupBall.position = CGPoint(x: 351, y: 500)
+        dupBall.physicsBody = SKPhysicsBody(circleOfRadius: ball.size.width / 2)
+        dupBall.zPosition = -1
+        dupBall.physicsBody?.restitution = 0.0
+        dupBall.physicsBody?.friction = 0.5
+        dupBall.physicsBody?.linearDamping = 0.9
+        dupBall.physicsBody?.angularDamping = 0.5
+        dupBall.physicsBody?.isDynamic = true
+        dupBall.physicsBody?.usesPreciseCollisionDetection = true
+        dupBall.physicsBody?.categoryBitMask = PhysicsCategory.ballDup
+        dupBall.physicsBody?.collisionBitMask = PhysicsCategory.triangleWall | PhysicsCategory.flipper | PhysicsCategory.bumper | PhysicsCategory.rectangleWall | PhysicsCategory.ball | PhysicsCategory.ballDup
+        dupBall.physicsBody?.contactTestBitMask = PhysicsCategory.triangleWall | PhysicsCategory.flipper | PhysicsCategory.bumper | PhysicsCategory.rectangleWall | PhysicsCategory.itemDupli | PhysicsCategory.itemPun | PhysicsCategory.ball | PhysicsCategory.itemFlip | PhysicsCategory.fistAttackLeft | PhysicsCategory.fistLauncher | PhysicsCategory.fistAttackRight | PhysicsCategory.itemBoss | PhysicsCategory.loseBox
         
-        addChild(ball)
+        addChild(dupBall)
     }
     
     func addBumperLeft(){
         bumperLeft = SKSpriteNode(imageNamed: "BumperLeft")
         bumperLeft.size = CGSize(width: 70, height: 70)
-        bumperLeft.position = CGPoint(x: 35, y: 740)
+        bumperLeft.position = CGPoint(x: 35, y: 680)
         
         let trianglePath = CGMutablePath()
         trianglePath.move(to: CGPoint(x: -40, y: 35))
@@ -602,7 +627,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     func addBumperRight(){
         let bumperRight = SKSpriteNode(imageNamed: "BumperRight")
         bumperRight.size = CGSize(width: 70, height: 70)
-        bumperRight.position = CGPoint(x: 355, y: 740)
+        bumperRight.position = CGPoint(x: 367, y: 680)
         bumperRight.name = "bumperRight"
 
         let trianglePath = CGMutablePath()
@@ -625,10 +650,10 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     
     func addBoss(){
         boss = SKSpriteNode(imageNamed: "BossEntity")
-        boss.size = CGSize(width: 200, height: 200)
+        boss.size = CGSize(width: 180, height: 180)
         
         let body = SKPhysicsBody(circleOfRadius: boss.size.width / 2)
-        boss.position = CGPoint(x: frame.width / 2, y: 670)
+        boss.position = CGPoint(x: frame.width / 2, y: 625)
         boss.physicsBody = body
         boss.physicsBody?.isDynamic = false
         boss.physicsBody?.affectedByGravity = false
@@ -777,13 +802,12 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     
     func addLeftFlipper() {
         flipLeft = SKSpriteNode(imageNamed: "LeftFlipper")
-        flipLeft.size = CGSize(width: 200, height: 200)
+        flipLeft.size = CGSize(width: 180, height: 180)
         flipLeft.anchorPoint = CGPoint(x: 0.18, y: 0.20)
-        flipLeft.position = CGPoint(x: 65, y: 117-15)
+        flipLeft.position = CGPoint(x: 66, y: 90)
         flipLeft.name = "flipLeft"
-        flipLeft.zPosition = 0
 
-        let bodySize = CGSize(width: 100, height: 20)
+        let bodySize = CGSize(width: 100, height: 17)
         flipLeft.physicsBody = SKPhysicsBody(rectangleOf: bodySize, center: CGPoint(x: 20, y: 0))
         flipLeft.physicsBody?.isDynamic = true
         flipLeft.physicsBody?.affectedByGravity = false
@@ -792,6 +816,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         flipLeft.physicsBody?.friction = 0.2
         flipLeft.physicsBody?.density = 100.0
         flipLeft.physicsBody?.restitution = 0.0
+        flipLeft.physicsBody?.usesPreciseCollisionDetection = true
 
         flipLeft.physicsBody?.categoryBitMask = PhysicsCategory.flipper
         flipLeft.physicsBody?.collisionBitMask = PhysicsCategory.ball | PhysicsCategory.ballDup
@@ -813,7 +838,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
             anchor: pivot.position
         )
         pin.shouldEnableLimits = true
-        pin.lowerAngleLimit = -.pi / 3
+        pin.lowerAngleLimit = -.pi / 4
         pin.upperAngleLimit = .pi / 3
         pin.frictionTorque = 0.0
 
@@ -830,13 +855,13 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
 
     func addRightFlipper() {
         flipRight = SKSpriteNode(imageNamed: "RightFlipper")
-        flipRight.size = CGSize(width: 200, height: 200)
-        flipRight.anchorPoint = CGPoint(x: 0.85, y: 0.18)
+        
+        flipRight.size = CGSize(width: 180, height: 180)
+        flipRight.anchorPoint = CGPoint(x: 0.82, y: 0.20)
         flipRight.name = "flipRight"
-        flipRight.zPosition = 0
         //flipRight.alpha = 0
         
-        let bodySize = CGSize(width: 100, height: 20)
+        let bodySize = CGSize(width: 100, height: 17)
         flipRight.physicsBody = SKPhysicsBody(rectangleOf: bodySize, center: CGPoint(x: -20, y: 0))
         
         flipRight.physicsBody?.isDynamic = true
@@ -846,6 +871,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         flipRight.physicsBody?.friction = 0.2
         flipRight.physicsBody?.density = 100.0
         flipRight.physicsBody?.restitution = 0.0
+        flipRight.physicsBody?.usesPreciseCollisionDetection = true
         
         flipRight.physicsBody?.categoryBitMask = PhysicsCategory.flipper
         flipRight.physicsBody?.collisionBitMask = PhysicsCategory.ball | PhysicsCategory.ballDup
@@ -854,7 +880,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         addChild(flipRight)
 
         let pivot = SKShapeNode(circleOfRadius: 1)
-        pivot.position = CGPoint(x: 330, y: 107)
+        pivot.position = CGPoint(x: 324, y: 90)
         pivot.strokeColor = .clear
         pivot.name = "flipRightPivot"
         flipRight.position = pivot.position
@@ -871,7 +897,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
 
         pin.shouldEnableLimits = true
         pin.lowerAngleLimit = -.pi / 3
-        pin.upperAngleLimit = .pi / 3
+        pin.upperAngleLimit = .pi / 4
         pin.frictionTorque = 0.0
 
         self.physicsWorld.add(pin)
