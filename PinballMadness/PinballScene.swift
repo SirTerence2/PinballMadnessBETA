@@ -75,7 +75,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         physicsWorld.contactDelegate = self
         physicsWorld.gravity = CGVector(dx: 0, dy: -10)
         backgroundColor = .clear
-
+        
         addBackdrop()
         
         addCeiling()
@@ -85,7 +85,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         addTrianglesRight(at: CGPoint(x: 400, y: -11))
         
         addBall(position: CGPoint(x: 50, y: 500))
-
+        
         addLeftFlipper()
         applyLeftFlipperImpulse()
         addRightFlipper()
@@ -108,13 +108,13 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         timerBackground.fillColor = SKColor.black.withAlphaComponent(1)
         timerBackground.strokeColor = .black
         timerBackground.zPosition = 1000
-        timerBackground.position = CGPoint(x: size.width / 2, y: 710)
+        timerBackground.position = CGPoint(x: size.width / 2, y: 765)
         pinballWorldNode.addChild(timerBackground)
-
+        
         addTimer(position: CGPoint(x: timerBackground.position.x, y: timerBackground.position.y - 13), flipped: false)
         addLoseBox()
     }
-
+    
     struct PhysicsCategory {
         static let none: UInt32 = 0
         static let flipper: UInt32 = 0b1
@@ -177,65 +177,90 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
-        let location = touch.location(in: self)
-        let touchedNode = atPoint(location)
-        let positionBall = ball.position as CGPoint
-        let ballDistanceLeft = positionBall.x
-        let ballDistanceRight = frame.width - positionBall.x
-        
-        if touchedNode == flipLeft {
-            applyLeftFlipperImpulse()
-        } else if touchedNode == flipRight {
-            applyRightFlipperImpulse()
-        } else if touchedNode == ball {
-            if jumpBoostAvailable {
-                jumpBoostAvailable = false
-                if ballDistanceLeft <= ballDistanceRight {
-                    ball.physicsBody?.applyImpulse(CGVector(dx: 100, dy: 100))
-                }
-                else {
-                    ball.physicsBody?.applyImpulse(CGVector(dx: -100, dy: 100))
+        for touch in touches {
+            let p = touch.location(in: self)
+            var handled = false
+            
+            // 1) Hit-test using PHYSICS bodies at the touch point
+            physicsWorld.enumerateBodies(at: p) { body, stop in
+                guard let node = body.node else { return }
+                switch node.name {
+                case "flipLeft":
+                    self.applyLeftFlipperImpulse()
+                    handled = true
+                    stop.pointee = true
+                    
+                case "flipRight":
+                    self.applyRightFlipperImpulse()
+                    handled = true
+                    stop.pointee = true
+                    
+                case "Pinball":
+                    if self.jumpBoostAvailable {
+                        self.jumpBoostAvailable = false
+                        // compute side vs center using BALL position
+                        let ballX = self.ball.position.x
+                        let ballDistanceLeft = ballX
+                        let ballDistanceRight = self.frame.width - ballX
+                        let dx: CGFloat = (ballDistanceLeft <= ballDistanceRight) ? 100 : -100
+                        self.ball.physicsBody?.applyImpulse(CGVector(dx: dx, dy: 100))
+                    }
+                    handled = true
+                    stop.pointee = true
+                    
+                case "PinballDup":
+                    if self.jumpBoostAvailable {
+                        self.jumpBoostAvailable = false
+                        // compute side vs center using DUP BALL position
+                        let x = node.position.x
+                        let left = x
+                        let right = self.frame.width - x
+                        let dx: CGFloat = (left <= right) ? 100 : -100
+                        node.physicsBody?.applyImpulse(CGVector(dx: dx, dy: 100))
+                    }
+                    handled = true
+                    stop.pointee = true
+                    
+                case "fistLeft":
+                    if let sprite = node as? SKSpriteNode {
+                        let positionMem = sprite.position
+                        sprite.texture = SKTexture(imageNamed: "PistonCompressed")
+                        sprite.position = CGPoint(x: 0, y: 20)
+                        self.addFistProjectile(isRight: false)
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            sprite.texture = SKTexture(imageNamed: "PistonUncompressed")
+                            sprite.position = positionMem
+                            sprite.physicsBody?.applyForce(CGVector(dx: 350, dy: 350))
+                        }
+                        handled = true
+                        stop.pointee = true
+                    }
+                    
+                case "fistRight":
+                    if let sprite = node as? SKSpriteNode {
+                        let positionMem = sprite.position
+                        sprite.texture = SKTexture(imageNamed: "PistonCompressed")
+                        sprite.xScale = -1
+                        sprite.position = CGPoint(x: 390, y: 20)
+                        self.addFistProjectile(isRight: true)
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            sprite.texture = SKTexture(imageNamed: "PistonUncompressed")
+                            sprite.xScale = -1
+                            sprite.position = positionMem
+                            sprite.physicsBody?.applyForce(CGVector(dx: -350, dy: 350))
+                        }
+                        handled = true
+                        stop.pointee = true
+                    }
+                    
+                default:
+                    break
                 }
             }
-        }
-        else if touchedNode == dupBall {
-            if jumpBoostAvailable {
-                jumpBoostAvailable = false
-                if ballDistanceLeft <= ballDistanceRight {
-                    dupBall.physicsBody?.applyImpulse(CGVector(dx: 100, dy: 100))
-                }
-                else {
-                    dupBall.physicsBody?.applyImpulse(CGVector(dx: -100, dy: 100))
-                }
-            }
-        }
-        
-        if let sprite = touchedNode as? SKSpriteNode, sprite.name == "fistLeft" {
-            let positionMem = sprite.position
-            sprite.texture = SKTexture(imageNamed: "PistonCompressed")
-            sprite.position = CGPoint(x: 0, y: 20)
-            addFistProjectile(isRight: false)
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: {
-                sprite.texture = SKTexture(imageNamed: "PistonUncompressed")
-                sprite.position = positionMem
-                sprite.physicsBody?.applyForce(CGVector(dx: 350, dy: 350))
-            })
-        }
-        if let sprite = touchedNode as? SKSpriteNode, sprite.name == "fistRight" {
-            let positionMem = sprite.position
-            sprite.texture = SKTexture(imageNamed: "PistonCompressed")
-            sprite.xScale = -1
-            sprite.position = CGPoint(x: 390, y: 20)
-            addFistProjectile(isRight: true)
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: {
-                sprite.texture = SKTexture(imageNamed: "PistonUncompressed")
-                sprite.xScale = -1
-                sprite.position = positionMem
-                sprite.physicsBody?.applyForce(CGVector(dx: -350, dy: 350))
-            })
+            if handled { continue }
         }
     }
     
@@ -244,10 +269,10 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         
         //control speed for main ball
         guard let bodyBall = ball.physicsBody else { return }
-
+        
         let speedBall = hypot(bodyBall.velocity.dx, bodyBall.velocity.dy)
         let maxSpeedBall: CGFloat = 800
-
+        
         if speedBall > maxSpeedBall {
             let scale = maxSpeedBall / speedBall
             bodyBall.velocity = CGVector(dx: bodyBall.velocity.dx * scale, dy: bodyBall.velocity.dy * scale)
@@ -300,15 +325,15 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         //control speed for dup ball
         if dupBallActive == false { return }
         guard let bodyBallDup = dupBall.physicsBody else { return }
-
+        
         let speedDupBall = hypot(bodyBallDup.velocity.dx, bodyBallDup.velocity.dy)
         let maxSpeedDupBall: CGFloat = 800
-
+        
         if speedDupBall > maxSpeedDupBall {
             let scale = maxSpeedDupBall / speedDupBall
             bodyBallDup.velocity = CGVector(dx: bodyBallDup.velocity.dx * scale, dy: bodyBallDup.velocity.dy * scale)
         }
-
+        
     }
     
     func ballFistProjectileCollision(_ contact: SKPhysicsContact){
@@ -333,18 +358,18 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     func bumperBallCollision(_ contact: SKPhysicsContact){
         let ballCategory = PhysicsCategory.ball
         let bumperCategory = PhysicsCategory.bumper
-
+        
         let a = contact.bodyA
         let b = contact.bodyB
-
+        
         guard let ball = (a.categoryBitMask == ballCategory ? a : b).node as? SKSpriteNode,
-                let bumper = (a.categoryBitMask == bumperCategory ? a : b).node else {
+              let bumper = (a.categoryBitMask == bumperCategory ? a : b).node else {
             return
         }
-
+        
         if let body = ball.physicsBody {
             var impulse = CGVector(dx: 0, dy: 0)
-
+            
             switch bumper.name {
             case "bumperRight":
                 impulse = CGVector(dx: -80, dy: 0)
@@ -359,7 +384,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             default:
                 impulse = CGVector(dx: 0, dy: 30)
             }
-
+            
             body.applyImpulse(impulse)
         }
     }
@@ -398,7 +423,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 self.addDupBall()
                 self.dupBallActive = true
                 self.dupPublisher.send(true)
-
+                
                 self.summonedOtherItems = false;
                 DispatchQueue.main.asyncAfter(deadline: .now() + 40.0){
                     for node in self.pinballWorldNode.children {
@@ -494,7 +519,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 DispatchQueue.main.asyncAfter(deadline: .now() + 15.0) {
                     for node in self.children {
                         node.yScale *= -1
-
+                        
                         let newY = sceneHeight - node.position.y
                         node.position.y = newY
                     }
@@ -598,7 +623,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             }
         }
     }
-
+    
     func addBall(position: CGPoint) {
         ball = SKSpriteNode(imageNamed: ballSkin)
         ball.name = "Pinball"
@@ -624,7 +649,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         dupBall.name = "PinballDup"
         dupBall.size = CGSize(width: 55, height: 55)
         dupBall.position = CGPoint(x: 351, y: 500)
-        dupBall.physicsBody = SKPhysicsBody(circleOfRadius: ball.size.width / 2)
+        dupBall.physicsBody = SKPhysicsBody(circleOfRadius: dupBall.size.width / 2)
         dupBall.zPosition = -1
         dupBall.physicsBody?.restitution = 0.0
         dupBall.physicsBody?.friction = 0.5
@@ -645,7 +670,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         let body = SKPhysicsBody(rectangleOf: size)
         body.isDynamic = false
         ceiling.physicsBody = body
-        ceiling.position = CGPoint(x: 300, y: 684)
+        ceiling.position = CGPoint(x: 300, y: 740)
         ceiling.name = "ceiling"
         
         pinballWorldNode.addChild(ceiling)
@@ -672,8 +697,8 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         flipLeft.anchorPoint = CGPoint(x: 0.18, y: 0.20)
         flipLeft.position = CGPoint(x: 66, y: 90)
         flipLeft.name = "flipLeft"
-
-        let bodySize = CGSize(width: 100, height: 17)
+        
+        let bodySize = CGSize(width: 110, height: 80)
         flipLeft.physicsBody = SKPhysicsBody(rectangleOf: bodySize, center: CGPoint(x: 20, y: 0))
         flipLeft.physicsBody?.isDynamic = true
         flipLeft.physicsBody?.affectedByGravity = false
@@ -683,21 +708,20 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         flipLeft.physicsBody?.density = 100.0
         flipLeft.physicsBody?.restitution = 0.0
         flipLeft.physicsBody?.usesPreciseCollisionDetection = true
-
+        
         flipLeft.physicsBody?.categoryBitMask = PhysicsCategory.flipper
         flipLeft.physicsBody?.collisionBitMask = PhysicsCategory.ball | PhysicsCategory.ballDup
         flipLeft.physicsBody?.contactTestBitMask = PhysicsCategory.none
-
+        
         pinballWorldNode.addChild(flipLeft)
-
+        
         let pivot = SKShapeNode(circleOfRadius: 5)
-        pivot.strokeColor = .clear
         pivot.name = "flipLeftPivot"
         pivot.position = flipLeft.position
         pivot.physicsBody = SKPhysicsBody(circleOfRadius: 1)
         pivot.physicsBody?.isDynamic = false
         pinballWorldNode.addChild(pivot)
-
+        
         let pin = SKPhysicsJointPin.joint(
             withBodyA: pivot.physicsBody!,
             bodyB: flipLeft.physicsBody!,
@@ -707,18 +731,18 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         pin.lowerAngleLimit = -.pi / 4
         pin.upperAngleLimit = .pi / 3
         pin.frictionTorque = 0.0
-
+        
         physicsWorld.add(pin)
     }
     
     func applyLeftFlipperImpulse() {
-        flipLeft.physicsBody?.applyAngularImpulse(100.0)
-
+        flipLeft.physicsBody?.applyAngularImpulse(150.0)
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.flipLeft.physicsBody?.applyAngularImpulse(-60.0)
         }
     }
-
+    
     func addRightFlipper() {
         flipRight = SKSpriteNode(imageNamed: "RightFlipper")
         
@@ -727,7 +751,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         flipRight.name = "flipRight"
         //flipRight.alpha = 0
         
-        let bodySize = CGSize(width: 100, height: 17)
+        let bodySize = CGSize(width: 100, height: 80)
         flipRight.physicsBody = SKPhysicsBody(rectangleOf: bodySize, center: CGPoint(x: -20, y: 0))
         
         flipRight.physicsBody?.isDynamic = true
@@ -744,33 +768,33 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         flipRight.physicsBody?.contactTestBitMask = PhysicsCategory.none
         
         pinballWorldNode.addChild(flipRight)
-
+        
         let pivot = SKShapeNode(circleOfRadius: 1)
         pivot.position = CGPoint(x: 324, y: 90)
         pivot.strokeColor = .clear
         pivot.name = "flipRightPivot"
         flipRight.position = pivot.position
-
+        
         pivot.physicsBody = SKPhysicsBody(circleOfRadius: 1)
         pivot.physicsBody?.isDynamic = false
         pinballWorldNode.addChild(pivot)
-
+        
         let pin = SKPhysicsJointPin.joint(
             withBodyA: pivot.physicsBody!,
             bodyB: flipRight.physicsBody!,
             anchor: pivot.position
         )
-
+        
         pin.shouldEnableLimits = true
         pin.lowerAngleLimit = -.pi / 3
         pin.upperAngleLimit = .pi / 4
         pin.frictionTorque = 0.0
-
+        
         self.physicsWorld.add(pin)
     }
-
+    
     func applyRightFlipperImpulse() {
-        flipRight.physicsBody?.applyAngularImpulse(-100)
+        flipRight.physicsBody?.applyAngularImpulse(-150)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             self.flipRight.physicsBody?.applyAngularImpulse(60.0)
         }
@@ -956,7 +980,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     func addBumperLeft(){
         bumperLeft = SKSpriteNode(imageNamed: "BumperLeft")
         bumperLeft.size = CGSize(width: 70, height: 70)
-        bumperLeft.position = CGPoint(x: 35, y: 645)
+        bumperLeft.position = CGPoint(x: 35, y: 700)
         
         let trianglePath = CGMutablePath()
         trianglePath.move(to: CGPoint(x: -39, y: 34))
@@ -985,9 +1009,9 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     func addBumperRight(){
         let bumperRight = SKSpriteNode(imageNamed: "BumperRight")
         bumperRight.size = CGSize(width: 70, height: 70)
-        bumperRight.position = CGPoint(x: 370, y: 645)
+        bumperRight.position = CGPoint(x: 355, y: 700)
         bumperRight.name = "bumperRight"
-
+        
         let trianglePath = CGMutablePath()
         trianglePath.move(to: CGPoint(x: 35, y: 35))
         trianglePath.addLine(to: CGPoint(x: 35, y: -42))
@@ -1005,7 +1029,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         body.categoryBitMask = PhysicsCategory.bumper
         body.collisionBitMask = PhysicsCategory.ball
         body.contactTestBitMask = PhysicsCategory.ball
-
+        
         bumperRight.physicsBody = body
         pinballWorldNode.addChild(bumperRight)
     }
@@ -1013,7 +1037,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     func addBumperCenter(){
         bumperCenter = SKSpriteNode(imageNamed: "BumperCenter")
         bumperCenter.size = CGSize(width: 100, height: 100)
-        bumperCenter.position = CGPoint(x: 195, y: 400)
+        bumperCenter.position = CGPoint(x: 195, y: 450)
         
         let body = SKPhysicsBody(circleOfRadius: 3.0)
         body.isDynamic = false
@@ -1033,11 +1057,11 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         wall = SKSpriteNode(imageNamed: "Obstacle")
         wall.name = "obstacle"
         wall.size = CGSize(width: 50, height: 50)
-        wall.position =  CGPoint(x: wall.size.width / 2, y: 500)
+        wall.position =  CGPoint(x: wall.size.width / 2, y: 550)
         wall.physicsBody = SKPhysicsBody(rectangleOf: wall.size)
         wall.physicsBody!.isDynamic = false
         wall.physicsBody!.affectedByGravity = false
-
+        
         pinballWorldNode.addChild(wall)
         
         wall.run(wallMovement())
@@ -1047,25 +1071,25 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         wall = SKSpriteNode(imageNamed: "Obstacle")
         wall.name = "obstacle"
         wall.size = CGSize(width: 50, height: 50)
-        wall.position = CGPoint(x: wall.size.width / 2, y: 300)
+        wall.position = CGPoint(x: wall.size.width / 2, y: 350)
         wall.physicsBody = SKPhysicsBody(rectangleOf: wall.size)
         wall.physicsBody!.isDynamic = false
         wall.physicsBody!.affectedByGravity = false
-
+        
         pinballWorldNode.addChild(wall)
         wall.run(wallMovement())
     }
     
     func wallMovement() -> SKAction{
         let wait = SKAction.wait(forDuration: 0.5)
-
+        
         let moveRight = SKAction.moveBy(x: backgroundWidth - wall.size.width, y: 0, duration: 2.0)
         let waitMid = SKAction.wait(forDuration: 0.3)
         let moveLeft = SKAction.moveBy(x: (-1 * backgroundWidth) + wall.size.width, y: 0, duration: 2.0)
         let waitMid3 = SKAction.wait(forDuration: 0.3)
-
+        
         let pattern = SKAction.sequence([wait, moveRight, waitMid, moveLeft, waitMid3])
-
+        
         let loop = SKAction.repeatForever(pattern)
         
         return loop
@@ -1094,7 +1118,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     dupItem.physicsBody?.categoryBitMask = PhysicsCategory.itemDupli
                     dupItem.physicsBody?.collisionBitMask = PhysicsCategory.ball
                     dupItem.physicsBody?.contactTestBitMask = PhysicsCategory.none
-
+                    
                     if(!self.summonedOtherItems){
                         self.summonedOtherItems = true
                         self.pinballWorldNode.addChild(dupItem)
@@ -1129,7 +1153,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     punItem.physicsBody?.categoryBitMask = PhysicsCategory.itemPun
                     punItem.physicsBody?.collisionBitMask = PhysicsCategory.ball
                     punItem.physicsBody?.contactTestBitMask = PhysicsCategory.none
-                
+                    
                     if(!self.summonedOtherItems){
                         self.summonedOtherItems = true
                         self.pinballWorldNode.addChild(punItem)
@@ -1146,7 +1170,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 SKAction.wait(forDuration: delay),
                 SKAction.run {
                     let flipItem = SKSpriteNode(imageNamed: "Flip_Item")
-                    flipItem.name = "punItem"
+                    flipItem.name = "flipItem"
                     flipItem.size = CGSize(width: 100, height: 100)
                     var position: CGPoint
                     repeat {

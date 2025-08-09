@@ -119,9 +119,7 @@ struct ContentView: View {
                     else if screenDirection == "pinball"{
                         if let scene = pinballScene {
                             GeometryReader { geometry in
-                                ZStack {
-                                    pinballScreenView(geometry: geometry, scene: scene, settings: settings, background: background, exit: exit, settingsButton: settingsButton)
-                                }
+                                pinballScreenView(geometry: geometry, scene: scene, settings: settings, background: background, exit: exit, settingsButton: settingsButton)
                             }
                         }
                         if isSetting {
@@ -145,9 +143,7 @@ struct ContentView: View {
                     else if screenDirection == "boss", let scene = bossScene {
                         ZStack{
                             GeometryReader { geometry in
-                                ZStack {
-                                    BossScreenView(geometry: geometry, scene: scene, settings: settings, background: background, exit: exit, settingsButton: settingsButton)
-                                }
+                                BossScreenView(geometry: geometry, scene: scene, settings: settings, background: background, exit: exit, settingsButton: settingsButton)
                                 if isSetting {
                                     GeometryReader { geo in
                                         ZStack{
@@ -170,115 +166,108 @@ struct ContentView: View {
                     }
                     else if screenDirection == "achievement", let scene = achievementScene {
                         GeometryReader { geometry in
-                            ZStack {
-                                AchievementScreenView(geometry: geometry, scene: scene, settings: settings, background: background, exit: exit, settingsButton: settingsButton)
-                            }
+                            AchievementScreenView(geometry: geometry, scene: scene, settings: settings, background: background, exit: exit, settingsButton: settingsButton)
+                            
                         }
                     }
                     else if screenDirection == "skins", let scene = skinsScene {
                         GeometryReader { geometry in
-                            ZStack {
-                                background
-                                    .frame(width: geometry.size.width, height: geometry.size.height)
-                                ZStack{
-                                    SpriteView(scene: scene)
-                                        .id(achievementSceneID)
-                                        .ignoresSafeArea()
-                                    Button {
-                                        ballDesign = "Pinball"
-                                    } label: {
-                                        skinBox
-                                            .overlay(
-                                                Image("Pinball")
-                                                    .resizable()
-                                                    .frame(width: 150, height: 150)
-                                                    .offset(x: -8, y: -8)
-                                            )
-                                    }
-                                    .position(x: 120, y: 195)
-                                    
-                                    Button {
-                                        ballDesign = "PinballNuclear"
-                                    } label: {
-                                        skinBox
-                                            .overlay(
-                                                Image("PinballNuclear")
-                                                    .resizable()
-                                                    .frame(width: 150, height: 150)
-                                                    .offset(x: -12, y: -5)
-                                            )
-                                    }
-                                    .position(x: 300, y: 194)
-                                    
-                                    if numberOfAchievementsAchieved >= 3 {
-                                        Button {
-                                            ballDesign = "PinballSharkSkin"
-                                        } label: {
-                                            skinBox
-                                                .overlay(
-                                                    Image("PinballSharkSkin")
-                                                        .resizable()
-                                                        .frame(width: 150, height: 150)
-                                                        .offset(x: -12, y: -12)
-                                                )
-                                        }
-                                        .position(x: 120, y: 372)
-                                    }
-                                    else {
-                                        skinBox
-                                            .overlay(
-                                                Image("NotAchievedGraphic")
-                                                    .resizable()
-                                                    .frame(width: 180, height: 180)
-                                                    .offset(x: -6, y: 4)
-                                            )
-                                            .position(x: 120, y: 370)
-                                    }
-                                    
-                                    if numberOfAchievementsAchieved >= 5 {
-                                        Button {
-                                            ballDesign = "SpecialPinball"
-                                        } label: {
-                                            skinBox
-                                                .overlay(
-                                                    Image("SpecialPinball")
-                                                        .resizable()
-                                                        .frame(width: 150, height: 150)
-                                                        .offset(x: -12, y: -6)
-                                                )
-                                        }
-                                        .position(x: 300, y: 370)
-                                    }
-                                    else {
-                                        skinBox
-                                            .overlay(
-                                                Image("NotAchievedGraphic")
-                                                    .resizable()
-                                                    .frame(width: 180, height:  180)
-                                                    .offset(x: -6, y: 4)
-                                            )
-                                            .position(x: 300, y: 370)
-                                    }
-                                    HStack{
-                                        Image("Selected_Skin_Text")
-                                            .resizable()
-                                            .frame(width: 300, height: 300)
-                                        Image(ballDesign)
+                            SpriteView(scene: scene)
+                                .id(achievementSceneID)
+                                .ignoresSafeArea()
+                            Button {
+                                ballDesign = "Pinball"
+                            } label: {
+                                skinBox
+                                    .overlay(
+                                        Image("Pinball")
                                             .resizable()
                                             .frame(width: 150, height: 150)
-                                            .offset(x: -20)
-                                    }
-                                    .position(x: 190, y: 560)
-                                }
-                                Button {
-                                    startupScene?.isPaused = false
-                                    screenDirection = "startup"
-                                } label: {
-                                    exit
-                                }
-                                .position(x: 195, y: 725)
+                                            .offset(x: -8, y: -12)
+                                    )
                             }
+                            .position(x: 115, y: 245)
+                            
+                            Button {
+                                ballDesign = "PinballNuclear"
+                            } label: {
+                                skinBox
+                                    .overlay(
+                                        Image("PinballNuclear")
+                                            .resizable()
+                                            .frame(width: 150, height: 150)
+                                            .offset(x: -12, y: -5)
+                                    )
+                            }
+                            .position(x: 295, y: 245)
+                            
+                            if numberOfAchievementsAchieved >= 3 {
+                                Button {
+                                    ballDesign = "PinballSharkSkin"
+                                } label: {
+                                    skinBox
+                                        .overlay(
+                                            Image("PinballSharkSkin")
+                                                .resizable()
+                                                .frame(width: 150, height: 150)
+                                                .offset(x: -12, y: -12)
+                                        )
+                                }
+                                .position(x: 115, y: 420)
+                            }
+                            else {
+                                skinBox
+                                    .overlay(
+                                        Image("NotAchievedGraphic")
+                                            .resizable()
+                                            .frame(width: 180, height: 180)
+                                            .offset(x: -6, y: 4)
+                                    )
+                                    .position(x: 115, y: 420)
+                            }
+                            
+                            if numberOfAchievementsAchieved >= 5 {
+                                Button {
+                                    ballDesign = "SpecialPinball"
+                                } label: {
+                                    skinBox
+                                        .overlay(
+                                            Image("SpecialPinball")
+                                                .resizable()
+                                                .frame(width: 150, height: 150)
+                                                .offset(x: -12, y: -6)
+                                        )
+                                }
+                                .position(x: 295, y: 420)
+                            }
+                            else {
+                                skinBox
+                                    .overlay(
+                                        Image("NotAchievedGraphic")
+                                            .resizable()
+                                            .frame(width: 180, height:  180)
+                                            .offset(x: -6, y: 4)
+                                    )
+                                    .position(x: 295, y: 420)
+                            }
+                            HStack{
+                                Image("Selected_Skin_Text")
+                                    .resizable()
+                                    .frame(width: 300, height: 300)
+                                Image(ballDesign)
+                                    .resizable()
+                                    .frame(width: 150, height: 150)
+                                    .offset(x: -20)
+                            }
+                            .position(x: 190, y: 590)
                         }
+                        Button {
+                            startupScene?.isPaused = false
+                            screenDirection = "startup"
+                        } label: {
+                            exit
+                        }
+                        .position(x: 195, y: 725)
                     }
                 }
                 .frame(width: baseSize.width, height: baseSize.height)
@@ -325,7 +314,7 @@ struct ContentView: View {
                                     RoundedRectangle(cornerRadius: 10)
                                         .fill(Color.black)
                                 )
-                                .offset(y: 170)
+                                .offset(y: 210)
                         }
                     }
                     
@@ -336,7 +325,7 @@ struct ContentView: View {
                     } label: {
                         Image("Replay_Button")
                             .resizable()
-                            .frame(width: geo.size.width * 0.44, height: geo.size.width * 0.38)
+                            .frame(width: 170, height: 170)
                     }
                     Button {
                         playerLost = false
@@ -344,13 +333,14 @@ struct ContentView: View {
                         screenDirection = "startup"
                     } label: {
                         exit
-                            .offset(x: geo.size.width * 0.03333)
+                            .offset(x: 5)
                     }
                 }
-                .position(x: geo.size.width * 0.5, y: geo.size.height * 0.98)
+                .position(x: 195, y: 810)
             }
         }
     }
+    
     @ViewBuilder
     func startupScreenView(geometry: GeometryProxy, scene: StartupScene, star: some View, settings: some View, background: some View, exit: some View) -> some View {
         ZStack {
@@ -358,19 +348,19 @@ struct ContentView: View {
                 .id(startupSceneID)
                 .ignoresSafeArea()
             if firstAchievementAchieved {
-                star.position(x: 103, y: 210)
+                star.position(x: 98, y: 260)
             }
             if secondAchievementAchieved {
-                star.position(x: 290, y: 210)
+                star.position(x: 278, y: 260)
             }
             if thirdAchievementAchieved {
-                star.position(x: 335, y: 310)
+                star.position(x: 325, y: 360)
             }
             if fourthAchievementAchieved {
-                star.position(x: 200, y: 310)
+                star.position(x: 193, y: 360)
             }
             if fifthAchievementAchieved {
-                star.position(x: 61, y: 310)
+                star.position(x: 58, y: 360)
             }
             
             Button {
@@ -380,7 +370,7 @@ struct ContentView: View {
                     .resizable()
                     .frame(width: 156, height: 156)
             }
-            .position(x: 195, y: 740)
+            .position(x: 195, y: 770)
             
             Button {
                 isSetting = true
@@ -390,7 +380,7 @@ struct ContentView: View {
                     .resizable()
                     .frame(width: 156, height: 156)
             }
-            .position(x: 195, y: 550)
+            .position(x: 195, y: 580)
             
             Button {
                 startupScene?.isPaused = true
@@ -410,9 +400,9 @@ struct ContentView: View {
             } label: {
                 Image("Achievements_Button")
                     .resizable()
-                    .frame(width: 140, height: 140)
+                    .frame(width: 120, height: 120)
             }
-            .position(x: 340, y: 650)
+            .position(x: 330, y: 650)
             if isSetting {
                 Color.black.opacity(0.8)
                     .ignoresSafeArea()
@@ -472,7 +462,7 @@ struct ContentView: View {
             } label: {
                 settingsButton
             }
-            .position(x: 320, y: isFlippedItemInEffect ? 785 : -30)
+            .position(x: 320, y: isFlippedItemInEffect ? 785 : 20)
             if isSetting {
                 Color.black.opacity(0.8)
                     .ignoresSafeArea()
@@ -516,15 +506,15 @@ struct ContentView: View {
                     numberOfAchievementsAchieved += 1
                 }
             }
-        Button {
+        //Button {
             //transport to setting scene
-            bossScene?.isPaused = true
-            isSetting = true
+            //bossScene?.isPaused = true
+            //isSetting = true
             
-        } label: {
-            settingsButton
-        }
-        .position(x: 305, y: -50)
+        //} label: {
+          //  settingsButton
+        //}
+        //.position(x: 293, y: 0)
         if isSetting {
             Color.black.opacity(0.8)
                 .ignoresSafeArea()
@@ -557,15 +547,15 @@ struct ContentView: View {
                     ZStack {
                         Image(background)
                             .resizable()
-                            .frame(width: 370, height: 600)
+                            .frame(width: 340, height: 600)
                         Image(image)
                             .resizable()
-                            .frame(width: 870, height: 800)
+                            .frame(width: 370, height: 800)
                     }
                     .frame(height: 60)
                 }
             }
-            .position(x: 200, y: 350)
+            .position(x: 195, y: 400)
             Button {
                 achievementSceneID = UUID()
                 screenDirection = "startup"
@@ -573,7 +563,7 @@ struct ContentView: View {
             } label: {
                 exit
             }
-            .position(x: 200, y: 700)
+            .position(x: 200, y: 740)
         }
     }
     

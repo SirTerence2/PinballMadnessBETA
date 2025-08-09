@@ -185,7 +185,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         self.run(repeatForever, withKey: "spawnLoop")
 
-        addBackground(position: CGPoint(x: size.width / 4, y: 736))
+        addBackground(position: CGPoint(x: size.width / 4, y: 795))
         hpLabelBoss = SKLabelNode(fontNamed: "Copperplate-Bold")
         hpLabelBoss.fontSize = 23
         if bossHealth >= 400 {
@@ -214,7 +214,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         addChild(hpCategoryBoss)
         addChild(hpLabelBoss)
         
-        addBackground(position: CGPoint(x: 3 * size.width / 4, y: 736))
+        addBackground(position: CGPoint(x: 3 * size.width / 4, y: 795))
         hpLabelPlayer = SKLabelNode(fontNamed: "Copperplate-Bold")
         hpLabelPlayer.fontSize = 22
         if ballHealth >= 400 {
@@ -267,26 +267,56 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
-        let location = touch.location(in: self)
-        let touchedNode = atPoint(location)
-        let positionBall = ball.position as CGPoint
-        let ballDistanceLeft = positionBall.x
-        let ballDistanceRight = frame.width - positionBall.x
-        
-        if touchedNode == flipLeft {
-            applyLeftFlipperImpulse()
-        } else if touchedNode == flipRight {
-            applyRightFlipperImpulse()
-        } else if touchedNode == ball {
-            if jumpBoostAvailable {
-                jumpBoostAvailable = false
-                if ballDistanceLeft <= ballDistanceRight {
-                    ball.physicsBody?.applyImpulse(CGVector(dx: 100, dy: 100))
+        for touch in touches {
+            let p = touch.location(in: self)
+            var handled = false
+            
+            // 1) Hit-test using PHYSICS bodies at the touch point
+            physicsWorld.enumerateBodies(at: p) { body, stop in
+                guard let node = body.node else { return }
+                switch node.name {
+                case "flipLeft":
+                    self.applyLeftFlipperImpulse()
+                    handled = true
+                    stop.pointee = true
+                    
+                case "flipRight":
+                    self.applyRightFlipperImpulse()
+                    handled = true
+                    stop.pointee = true
+                    
+                case "Pinball":
+                    if self.jumpBoostAvailable {
+                        self.jumpBoostAvailable = false
+                        // compute side vs center using BALL position
+                        let ballX = self.ball.position.x
+                        let ballDistanceLeft = ballX
+                        let ballDistanceRight = self.frame.width - ballX
+                        let dx: CGFloat = (ballDistanceLeft <= ballDistanceRight) ? 100 : -100
+                        self.ball.physicsBody?.applyImpulse(CGVector(dx: dx, dy: 100))
+                    }
+                    handled = true
+                    stop.pointee = true
+                    
+                case "PinballDup":
+                    if self.jumpBoostAvailable {
+                        self.jumpBoostAvailable = false
+                        // compute side vs center using DUP BALL position
+                        let x = node.position.x
+                        let left = x
+                        let right = self.frame.width - x
+                        let dx: CGFloat = (left <= right) ? 100 : -100
+                        node.physicsBody?.applyImpulse(CGVector(dx: dx, dy: 100))
+                    }
+                    handled = true
+                    stop.pointee = true
+                    
+                default:
+                    break
                 }
-                else {
-                    ball.physicsBody?.applyImpulse(CGVector(dx: -100, dy: 100))
-                }
+            }
+            if handled {
+                continue
             }
         }
     }
@@ -602,7 +632,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     func addBumperLeft(){
         bumperLeft = SKSpriteNode(imageNamed: "BumperLeft")
         bumperLeft.size = CGSize(width: 70, height: 70)
-        bumperLeft.position = CGPoint(x: 35, y: 680)
+        bumperLeft.position = CGPoint(x: 35, y: 740)
         
         let trianglePath = CGMutablePath()
         trianglePath.move(to: CGPoint(x: -40, y: 35))
@@ -627,7 +657,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     func addBumperRight(){
         let bumperRight = SKSpriteNode(imageNamed: "BumperRight")
         bumperRight.size = CGSize(width: 70, height: 70)
-        bumperRight.position = CGPoint(x: 367, y: 680)
+        bumperRight.position = CGPoint(x: 355, y: 740)
         bumperRight.name = "bumperRight"
 
         let trianglePath = CGMutablePath()
@@ -653,7 +683,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         boss.size = CGSize(width: 180, height: 180)
         
         let body = SKPhysicsBody(circleOfRadius: boss.size.width / 2)
-        boss.position = CGPoint(x: frame.width / 2, y: 625)
+        boss.position = CGPoint(x: frame.width / 2, y: 670)
         boss.physicsBody = body
         boss.physicsBody?.isDynamic = false
         boss.physicsBody?.affectedByGravity = false
@@ -807,7 +837,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         flipLeft.position = CGPoint(x: 66, y: 90)
         flipLeft.name = "flipLeft"
 
-        let bodySize = CGSize(width: 100, height: 17)
+        let bodySize = CGSize(width: 100, height: 80)
         flipLeft.physicsBody = SKPhysicsBody(rectangleOf: bodySize, center: CGPoint(x: 20, y: 0))
         flipLeft.physicsBody?.isDynamic = true
         flipLeft.physicsBody?.affectedByGravity = false
@@ -846,7 +876,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func applyLeftFlipperImpulse() {
-        flipLeft.physicsBody?.applyAngularImpulse(100.0)
+        flipLeft.physicsBody?.applyAngularImpulse(170.0)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.flipLeft.physicsBody?.applyAngularImpulse(-60.0)
@@ -861,7 +891,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         flipRight.name = "flipRight"
         //flipRight.alpha = 0
         
-        let bodySize = CGSize(width: 100, height: 17)
+        let bodySize = CGSize(width: 100, height: 80)
         flipRight.physicsBody = SKPhysicsBody(rectangleOf: bodySize, center: CGPoint(x: -20, y: 0))
         
         flipRight.physicsBody?.isDynamic = true
@@ -904,7 +934,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func applyRightFlipperImpulse() {
-        flipRight.physicsBody?.applyAngularImpulse(-100)
+        flipRight.physicsBody?.applyAngularImpulse(-170)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             self.flipRight.physicsBody?.applyAngularImpulse(60.0)
         }
