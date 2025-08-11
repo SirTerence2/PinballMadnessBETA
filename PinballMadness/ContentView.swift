@@ -577,6 +577,16 @@ struct ContentView: View {
         if let scene = pinballScene {
             scene.isPaused = false
             scene.physicsWorld.speed = 1.0
+            scene.flipLeft.physicsBody?.angularVelocity = 0
+            scene.flipLeft.physicsBody?.velocity = .zero
+            scene.flipLeft.physicsBody?.isResting = true
+            scene.flipLeft.zRotation = -.pi/3
+            scene.leftPressed = false
+            scene.flipRight.physicsBody?.angularVelocity = 0
+            scene.flipRight.physicsBody?.velocity = .zero
+            scene.flipRight.physicsBody?.isResting = true
+            scene.flipRight.zRotation = .pi/3
+            scene.rightPressed = false
             screenDirection = "pinball"
             scene.ballSkin = ballDesign
             if !isDupBallThere {
