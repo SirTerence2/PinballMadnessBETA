@@ -104,8 +104,6 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         hpLabelPlayer.text = String(ballHealth)
         
         timeSurvivedValue += 1 / 60.0
-
-        print("Boss " + String(Int(timeSurvivedValue)))
         if ballHealth <= 0 {
             losePublisher.send()
         }
@@ -185,7 +183,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         self.run(repeatForever, withKey: "spawnLoop")
 
-        addBackground(position: CGPoint(x: size.width / 4, y: 795))
+        addBackground(position: CGPoint(x: 60, y: 795))
         hpLabelBoss = SKLabelNode(fontNamed: "Copperplate-Bold")
         hpLabelBoss.fontSize = 23
         if bossHealth >= 400 {
@@ -200,7 +198,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         hpLabelBoss.zPosition = 1001
         hpLabelBoss.text = String(bossHealth)
-        hpLabelBoss.position = CGPoint(x: size.width / 4, y: hpBackground.position.y - 15)
+        hpLabelBoss.position = CGPoint(x: 60, y: hpBackground.position.y - 15)
         hpLabelBoss.name = "hpBoss"
         
         hpCategoryBoss = SKLabelNode(fontNamed: "Copperplate-Bold")
@@ -214,7 +212,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         addChild(hpCategoryBoss)
         addChild(hpLabelBoss)
         
-        addBackground(position: CGPoint(x: 3 * size.width / 4, y: 795))
+        addBackground(position: CGPoint(x: 330, y: 795))
         hpLabelPlayer = SKLabelNode(fontNamed: "Copperplate-Bold")
         hpLabelPlayer.fontSize = 22
         if ballHealth >= 400 {
@@ -229,7 +227,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         hpLabelPlayer.zPosition = 1001
         hpLabelPlayer.text = String(ballHealth)
-        hpLabelPlayer.position = CGPoint(x: 3 * size.width / 4, y: hpBackground.position.y - 15)
+        hpLabelPlayer.position = CGPoint(x: 330, y: hpBackground.position.y - 15)
         hpLabelPlayer.name = "hpPlayer"
         
         hpCategoryPlayer = SKLabelNode(fontNamed: "Copperplate-Bold")

@@ -504,7 +504,6 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     }
                     
                     if node.name == "timer" {
-                        print("removedFirst")
                         node.removeFromParent()
                     }
                 }
@@ -540,7 +539,6 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                             node.removeFromParent()
                         }
                         if node.name == "timer" {
-                            print("removedSecond")
                             node.removeFromParent()
                         }
                     }
@@ -1171,7 +1169,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                         let randomX: CGFloat = CGFloat.random(in: 0...190)
                         let randomY: CGFloat = CGFloat.random(in: 220...422)
                         position = CGPoint(x: randomX, y: randomY)
-                    } while position.distance(to: self.ball.position) < 50
+                    } while position.distance(to: self.ball.position) < 100
                     dupItem.position = position
                     dupItem.physicsBody = SKPhysicsBody(rectangleOf: dupItem.size)
                     dupItem.physicsBody!.isDynamic = false
@@ -1191,7 +1189,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     }
     
     func addItemPun(){
-        let delay = 1 * Double.random(in: 1...3)
+        let delay = 30 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),
@@ -1204,7 +1202,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                         let randomX: CGFloat = CGFloat.random(in: 0...190)
                         let randomY: CGFloat = CGFloat.random(in: 220...422)
                         position = CGPoint(x: randomX, y: randomY)
-                    } while position.distance(to: self.ball.position) < 50
+                    } while position.distance(to: self.ball.position) < 100
                     
                     punItem.position = position
                     
@@ -1239,7 +1237,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                         let randomX: CGFloat = CGFloat.random(in: 0...190)
                         let randomY: CGFloat = CGFloat.random(in: 220...422)
                         position = CGPoint(x: randomX, y: randomY)
-                    } while position.distance(to: self.ball.position) < 50
+                    } while position.distance(to: self.ball.position) < 100
                     flipItem.position = position
                     flipItem.physicsBody = SKPhysicsBody(rectangleOf: flipItem.size)
                     flipItem.physicsBody!.isDynamic = false
@@ -1259,7 +1257,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     }
     
     func addBossItem(){
-        let delay = 40 * Double.random(in: 1...3)
+        let delay = 1 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),
@@ -1272,7 +1270,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                         let randomX: CGFloat = CGFloat.random(in: 0...190)
                         let randomY: CGFloat = CGFloat.random(in: 220...422)
                         position = CGPoint(x: randomX, y: randomY)
-                    } while position.distance(to: self.ball.position) < 50
+                    } while position.distance(to: self.ball.position) < 100
                     bossItem.position = position
                     bossItem.physicsBody = SKPhysicsBody(rectangleOf: bossItem.size)
                     bossItem.physicsBody!.isDynamic = false

@@ -14,8 +14,8 @@
             filePath = "PinballMadness/PinballScene.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1042"
-            endingLineNumber = "1042"
+            startingLineNumber = "1040"
+            endingLineNumber = "1040"
             landmarkName = "addBumperLeft()"
             landmarkType = "7">
          </BreakpointContent>
@@ -33,7 +33,7 @@
             startingLineNumber = "590"
             endingLineNumber = "590"
             landmarkName = "resumePinballScene(playerWon:scene:)"
-            landmarkType = "7">
+            landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -46,8 +46,8 @@
             filePath = "PinballMadness/BossScene.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "476"
-            endingLineNumber = "476"
+            startingLineNumber = "474"
+            endingLineNumber = "474"
             landmarkName = "ballLoseBoxCollision(_:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -62,8 +62,8 @@
             filePath = "PinballMadness/BossScene.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "872"
-            endingLineNumber = "872"
+            startingLineNumber = "870"
+            endingLineNumber = "870"
             landmarkName = "addLeftFlipper()"
             landmarkType = "7">
          </BreakpointContent>
@@ -78,8 +78,8 @@
             filePath = "PinballMadness/PinballScene.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1160"
-            endingLineNumber = "1160"
+            startingLineNumber = "1158"
+            endingLineNumber = "1158"
             landmarkName = "addItemDup()"
             landmarkType = "7">
          </BreakpointContent>
@@ -114,6 +114,22 @@
             endingLineNumber = "122"
             landmarkName = "PhysicsCategory"
             landmarkType = "14">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "A24EE00B-1F04-4460-A267-24800B1F17EB"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "PinballMadness/ContentView.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "620"
+            endingLineNumber = "620"
+            landmarkName = "startGame()"
+            landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

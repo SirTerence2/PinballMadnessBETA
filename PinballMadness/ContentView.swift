@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SpriteKit
+import UIKit
 import Combine
 
 
@@ -28,7 +29,8 @@ func makeAchievementsScene() -> AchievementScene {
     return scene
 }
 struct ContentView: View {
-    private let baseSize = CGSize(width: 390, height: 844)
+    private var isPad: Bool {UIDevice.current.userInterfaceIdiom == .pad }
+    private let baseSize = CGSize(width: 390, height: 944)
     
     @State private var pinballSceneID = UUID()
     @State private var startupSceneID = UUID()
@@ -56,11 +58,11 @@ struct ContentView: View {
     @State private var achievementScene: AchievementScene? = makeAchievementsScene()
     @State private var skinsScene: SkinsScene? = makeSkinsScene()
     
-    @State private var firstAchievementAchieved: Bool = false
-    @State private var secondAchievementAchieved: Bool = false
-    @State private var thirdAchievementAchieved: Bool = false
-    @State private var fourthAchievementAchieved: Bool = false
-    @State private var fifthAchievementAchieved: Bool = false
+    @State internal var firstAchievementAchieved: Bool = true
+    @State internal var secondAchievementAchieved: Bool = true
+    @State internal var thirdAchievementAchieved: Bool = true
+    @State internal var fourthAchievementAchieved: Bool = true
+    @State internal var fifthAchievementAchieved: Bool = true
     @State private var numberOfAchievementsAchieved: Int = 0
     
     @State private var playTime: TimeInterval = 0
@@ -69,7 +71,6 @@ struct ContentView: View {
     @State private var playTimerLabel: String = "00:00"
     @State private var ballCancellable: AnyCancellable?
     @State private var bossFightCount: Int = 0
-    
     
     var body: some View {
         let star = Image("Star")
@@ -133,7 +134,7 @@ struct ContentView: View {
                                 } label: {
                                     exit
                                 }
-                                .position(x: 200, y: 740)
+                                .position(x: 200, y: 830)
                             }
                         }
                         if playerLost {
@@ -145,20 +146,17 @@ struct ContentView: View {
                             GeometryReader { geometry in
                                 BossScreenView(geometry: geometry, scene: scene, settings: settings, background: background, exit: exit, settingsButton: settingsButton)
                                 if isSetting {
-                                    GeometryReader { geo in
-                                        ZStack{
-                                            VStack{
-                                                settings
-                                                    .frame(width: geo.size.width, height: geo.size.height)
-                                            }
-                                            Button {
-                                                isSetting = false
-                                                pinballScene?.isPaused = false
-                                            } label: {
-                                                exit
-                                            }
-                                            .position(x: 200, y: 740)
+                                    ZStack{
+                                        VStack{
+                                            settings
                                         }
+                                        Button {
+                                            isSetting = false
+                                            bossScene?.isPaused = false
+                                        } label: {
+                                            exit
+                                        }
+                                        .position(x: 200, y: 830)
                                     }
                                 }
                             }
@@ -348,21 +346,20 @@ struct ContentView: View {
                 .id(startupSceneID)
                 .ignoresSafeArea()
             if firstAchievementAchieved {
-                star.position(x: 98, y: 235)
+                star.position(x: 100, y: isPad ? 295 : 285)
             }
             if secondAchievementAchieved {
-                star.position(x: 278, y: 235)
+                star.position(x: 280, y: isPad ? 295 : 285)
             }
             if thirdAchievementAchieved {
-                star.position(x: 325, y: 340)
+                star.position(x: 325, y: isPad ? 405 : 395)
             }
             if fourthAchievementAchieved {
-                star.position(x: 193, y: 340)
+                star.position(x:195, y: isPad ? 405 : 395)
             }
             if fifthAchievementAchieved {
-                star.position(x: 58, y: 340)
+                star.position(x: 61, y: isPad ? 405 : 395)
             }
-            
             Button {
                 startGame()
             } label: {
@@ -370,7 +367,7 @@ struct ContentView: View {
                     .resizable()
                     .frame(width: 156, height: 156)
             }
-            .position(x: 195, y: 770)
+            .position(x: 195, y: 845)
             
             Button {
                 isSetting = true
@@ -380,7 +377,7 @@ struct ContentView: View {
                     .resizable()
                     .frame(width: 156, height: 156)
             }
-            .position(x: 195, y: 580)
+            .position(x: 195, y: 645)
             
             Button {
                 startupScene?.isPaused = true
@@ -391,7 +388,7 @@ struct ContentView: View {
                     .resizable()
                     .frame(width: 98, height: 98)
             }
-            .position(x: 52, y: 700)
+            .position(x: 52, y: 780)
             
             Button {
                 startupScene?.isPaused = true
@@ -402,7 +399,7 @@ struct ContentView: View {
                     .resizable()
                     .frame(width: 120, height: 120)
             }
-            .position(x: 330, y: 650)
+            .position(x: 330, y: 690)
             if isSetting {
                 Color.black.opacity(0.8)
                     .ignoresSafeArea()
@@ -420,7 +417,7 @@ struct ContentView: View {
                 } label: {
                     exit
                 }
-                .position(x: 195, y: 800)
+                .position(x: 195, y: 830)
             }
         }
     }
@@ -480,46 +477,49 @@ struct ContentView: View {
     
     @ViewBuilder
     func BossScreenView(geometry: GeometryProxy, scene: BossScene, settings: some View, background: some View, exit: some View, settingsButton: some View) -> some View {
-        SpriteView(scene: scene)
-            .id(bossSceneID)
-            .ignoresSafeArea()
-            .onReceive(scene.victoryPublisher){
-                bossFightCount += 1
-                if !secondAchievementAchieved{
-                    secondAchievementAchieved = bossFightCount >= 5
-                    if secondAchievementAchieved {
+        ZStack{
+            SpriteView(scene: scene)
+                .id(bossSceneID)
+                .ignoresSafeArea()
+                .onReceive(scene.victoryPublisher){
+                    bossFightCount += 1
+                    if !secondAchievementAchieved{
+                        secondAchievementAchieved = bossFightCount >= 5
+                        if secondAchievementAchieved {
+                            numberOfAchievementsAchieved += 1
+                        }
+                    }
+                    isDupBallThere = scene.dupBallThere
+                    print(isDupBallThere)
+                    resumePinballScene(playerWon: true, scene: scene)
+                }
+                .onReceive(scene.losePublisher) {
+                    isDupBallThere = scene.dupBallThere
+                    print(isDupBallThere)
+                    resumePinballScene(playerWon: false, scene: scene)
+                }
+                .onReceive(scene.neverRecievedDamagePublisher) {
+                    if !fifthAchievementAchieved {
+                        fifthAchievementAchieved = true
                         numberOfAchievementsAchieved += 1
                     }
                 }
-                isDupBallThere = scene.dupBallThere
-                print(isDupBallThere)
-                resumePinballScene(playerWon: true, scene: scene)
+            Button {
+                //transport to setting scene
+                bossScene?.isPaused = true
+                isSetting = true
+                
+            } label: {
+                settingsButton
             }
-            .onReceive(scene.losePublisher) {
-                isDupBallThere = scene.dupBallThere
-                print(isDupBallThere)
-                resumePinballScene(playerWon: false, scene: scene)
-            }
-            .onReceive(scene.neverRecievedDamagePublisher) {
-                if !fifthAchievementAchieved {
-                    fifthAchievementAchieved = true
-                    numberOfAchievementsAchieved += 1
-                }
-            }
-        //Button {
-            //transport to setting scene
-            //bossScene?.isPaused = true
-            //isSetting = true
+            .position(x: 195, y: isPad ? 0 : 4)
             
-        //} label: {
-          //  settingsButton
-        //}
-        //.position(x: 293, y: 0)
-        if isSetting {
-            Color.black.opacity(0.8)
-                .ignoresSafeArea()
-                .transition(.opacity)
-                .zIndex(1)
+            if isSetting {
+                Color.black.opacity(0.8)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .zIndex(1)
+            }
         }
     }
     
