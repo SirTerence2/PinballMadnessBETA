@@ -11,19 +11,19 @@ import Combine
 
 
 func makeStartupScene() -> StartupScene {
-    let scene = StartupScene(size: CGSize(width: 390, height: 844))
+    let scene = StartupScene(size: CGSize(width: 390, height: 944))
     scene.scaleMode = .aspectFit
     return scene
 }
 
 func makeSkinsScene() -> SkinsScene {
-    let scene = SkinsScene(size: CGSize(width: 390, height: 844))
+    let scene = SkinsScene(size: CGSize(width: 390, height: 944))
     scene.scaleMode = .aspectFit
     return scene
 }
 
 func makeAchievementsScene() -> AchievementScene {
-    let scene = AchievementScene(size: CGSize(width: 390, height: 844))
+    let scene = AchievementScene(size: CGSize(width: 390, height: 944))
     scene.scaleMode = .aspectFit
     return scene
 }
@@ -49,7 +49,7 @@ struct ContentView: View {
     
     let timer = Timer.publish(every: 0.75, on: .main, in: .common).autoconnect()
     
-    @State private var pinballScene: PinballScene? = PinballScene(size: CGSize(width: 390, height: 844))
+    @State private var pinballScene: PinballScene? = PinballScene(size: CGSize(width: 390, height: 944))
     @State private var startupScene: StartupScene? = makeStartupScene()
     
     @State private var bossScene: BossScene? = nil
@@ -329,7 +329,7 @@ struct ContentView: View {
                     }
                     Button {
                         playerLost = false
-                        startupSceneID = UUID()
+                        startupScene?.isPaused = false
                         screenDirection = "startup"
                     } label: {
                         exit
@@ -348,19 +348,19 @@ struct ContentView: View {
                 .id(startupSceneID)
                 .ignoresSafeArea()
             if firstAchievementAchieved {
-                star.position(x: 98, y: 260)
+                star.position(x: 98, y: 235)
             }
             if secondAchievementAchieved {
-                star.position(x: 278, y: 260)
+                star.position(x: 278, y: 235)
             }
             if thirdAchievementAchieved {
-                star.position(x: 325, y: 360)
+                star.position(x: 325, y: 340)
             }
             if fourthAchievementAchieved {
-                star.position(x: 193, y: 360)
+                star.position(x: 193, y: 340)
             }
             if fifthAchievementAchieved {
-                star.position(x: 58, y: 360)
+                star.position(x: 58, y: 340)
             }
             
             Button {
@@ -619,12 +619,13 @@ struct ContentView: View {
     
     func startGame(){
         playerLost = false
+        startupScene?.isPaused = true
         pinballScene?.timeSurvivedValue = 0
         bossScene?.timeSurvivedValue = 0
         playTime = 0
         bossScene?.removeAllChildren()
         pinballScene?.removeAllChildren()
-        pinballScene = PinballScene(size: CGSize(width: 390, height: 844))
+        pinballScene = PinballScene(size: CGSize(width: 390, height: 944))
         pinballScene?.scaleMode = .aspectFit
         
         pinballScene?.ballSkin = ballDesign
