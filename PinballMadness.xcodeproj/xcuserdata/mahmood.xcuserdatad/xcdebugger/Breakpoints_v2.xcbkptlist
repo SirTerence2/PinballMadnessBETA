@@ -14,8 +14,8 @@
             filePath = "PinballMadness/PinballScene.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1040"
-            endingLineNumber = "1040"
+            startingLineNumber = "1042"
+            endingLineNumber = "1042"
             landmarkName = "addBumperLeft()"
             landmarkType = "7">
          </BreakpointContent>
@@ -33,7 +33,7 @@
             startingLineNumber = "590"
             endingLineNumber = "590"
             landmarkName = "resumePinballScene(playerWon:scene:)"
-            landmarkType = "9">
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -78,8 +78,8 @@
             filePath = "PinballMadness/PinballScene.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1158"
-            endingLineNumber = "1158"
+            startingLineNumber = "1164"
+            endingLineNumber = "1164"
             landmarkName = "addItemDup()"
             landmarkType = "7">
          </BreakpointContent>
@@ -129,7 +129,23 @@
             startingLineNumber = "620"
             endingLineNumber = "620"
             landmarkName = "startGame()"
-            landmarkType = "9">
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "D932D824-403A-4E44-AFC1-259B501719B5"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "PinballMadness/PinballScene.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1136"
+            endingLineNumber = "1136"
+            landmarkName = "addWallBottomLeft()"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

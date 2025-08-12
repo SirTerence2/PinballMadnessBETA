@@ -13,19 +13,19 @@ import Combine
 
 func makeStartupScene() -> StartupScene {
     let scene = StartupScene(size: CGSize(width: 390, height: 944))
-    scene.scaleMode = .aspectFit
+    scene.scaleMode = .resizeFill
     return scene
 }
 
 func makeSkinsScene() -> SkinsScene {
     let scene = SkinsScene(size: CGSize(width: 390, height: 944))
-    scene.scaleMode = .aspectFit
+    scene.scaleMode = .resizeFill
     return scene
 }
 
 func makeAchievementsScene() -> AchievementScene {
     let scene = AchievementScene(size: CGSize(width: 390, height: 944))
-    scene.scaleMode = .aspectFit
+    scene.scaleMode = .resizeFill
     return scene
 }
 struct ContentView: View {
@@ -284,7 +284,7 @@ struct ContentView: View {
                         Image("GameOverScene")
                             .resizable()
                             .frame(width: 390, height: 1000)
-                            .offset(y: -68)
+                            .offset(y: -40)
                             .onAppear {
                                 playTime += pinballScene!.timeSurvivedValue
                                 minutes = Int(playTime) / 30
@@ -626,7 +626,7 @@ struct ContentView: View {
         bossScene?.removeAllChildren()
         pinballScene?.removeAllChildren()
         pinballScene = PinballScene(size: CGSize(width: 390, height: 944))
-        pinballScene?.scaleMode = .aspectFit
+        pinballScene?.scaleMode = .resizeFill
         
         pinballScene?.ballSkin = ballDesign
         pinballScene?.activatedDupPower = false

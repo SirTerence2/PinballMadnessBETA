@@ -87,8 +87,8 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         addCeiling()
         addSides(at: CGPoint(x: 42, y: 10))
         addSides(at: CGPoint(x: 359, y: 10))
-        addTrianglesLeft(at: CGPoint(x: 0, y: -22))
-        addTrianglesRight(at: CGPoint(x: 400, y: -11))
+        addTrianglesLeft(at: CGPoint(x: 0, y: 130))
+        addTrianglesRight(at: CGPoint(x: 390, y: 130))
         
         addBall(position: CGPoint(x: 50, y: 500))
         
@@ -112,7 +112,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         timerBackground.fillColor = SKColor.black.withAlphaComponent(1)
         timerBackground.strokeColor = .black
         timerBackground.zPosition = 1000
-        timerBackground.position = CGPoint(x: size.width / 2, y: 854)
+        timerBackground.position = CGPoint(x: size.width / 2, y: 890)
         pinballWorldNode.addChild(timerBackground)
         
         addTimer(position: CGPoint(x: timerBackground.position.x, y: timerBackground.position.y - 13), flipped: false)
@@ -151,7 +151,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         bg.size = self.size
         backgroundWidth = bg.size.width
         backgroundHeight = bg.size.height
-        bg.position = CGPoint(x: bg.size.width / 2, y: bg.size.height / 2)
+        bg.position = CGPoint(x: size.width / 2, y: size.height / 2)
         bg.zPosition = -1
         bg.name = "Background"
         pinballWorldNode.addChild(bg)
@@ -277,7 +277,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         guard let bodyBall = ball.physicsBody else { return }
         
         let speedBall = hypot(bodyBall.velocity.dx, bodyBall.velocity.dy)
-        let maxSpeedBall: CGFloat = 800
+        let maxSpeedBall: CGFloat = 1000
         
         if speedBall > maxSpeedBall {
             let scale = maxSpeedBall / speedBall
@@ -679,7 +679,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         let body = SKPhysicsBody(rectangleOf: size)
         body.isDynamic = false
         ceiling.physicsBody = body
-        ceiling.position = CGPoint(x: 300, y: 740)
+        ceiling.position = CGPoint(x: 300, y: 863)
         ceiling.name = "ceiling"
         
         pinballWorldNode.addChild(ceiling)
@@ -945,13 +945,14 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     
     func addTrianglesLeft(at position: CGPoint){
         let trianglePath = CGMutablePath()
-        trianglePath.move(to: CGPoint(x: 0, y: 122))
-        trianglePath.addLine(to: CGPoint(x: 0, y: 195))
-        trianglePath.addLine(to: CGPoint(x: 86, y: 122))
+        trianglePath.move(to: CGPoint(x: 0, y: 0))
+        trianglePath.addLine(to: CGPoint(x: 0, y: 90))
+        trianglePath.addLine(to: CGPoint(x: 86, y: 0))
         trianglePath.closeSubpath()
         
         let triangleWall = SKShapeNode(path: trianglePath)
         triangleWall.strokeColor = .clear
+        triangleWall.fillColor = .clear
         triangleWall.position = position
         
         let body = SKPhysicsBody(polygonFrom: trianglePath)
@@ -992,13 +993,14 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     
     func addTrianglesRight(at position: CGPoint){
         let trianglePath = CGMutablePath()
-        trianglePath.move(to: CGPoint(x: 0, y: 110))
-        trianglePath.addLine(to: CGPoint(x: 0, y: 183))
-        trianglePath.addLine(to: CGPoint(x: -86, y: 110))
+        trianglePath.move(to: CGPoint(x: 0, y: 0))
+        trianglePath.addLine(to: CGPoint(x: 0, y: 90))
+        trianglePath.addLine(to: CGPoint(x: -86, y: 0))
         trianglePath.closeSubpath()
         
         let triangleWall = SKShapeNode(path: trianglePath)
         triangleWall.strokeColor = .clear
+        triangleWall.fillColor = .clear
         triangleWall.position = position
         
         let body = SKPhysicsBody(polygonFrom: trianglePath)
@@ -1040,17 +1042,19 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     func addBumperLeft(){
         bumperLeft = SKSpriteNode(imageNamed: "BumperLeft")
         bumperLeft.size = CGSize(width: 70, height: 70)
-        bumperLeft.position = CGPoint(x: 35, y: 788)
+        bumperLeft.position = CGPoint(x: 35, y: 823)
         
         let trianglePath = CGMutablePath()
-        trianglePath.move(to: CGPoint(x: -39, y: 34))
-        trianglePath.addLine(to: CGPoint(x: -39, y: -42))
-        trianglePath.addLine(to: CGPoint(x: 35, y: 34))
+        trianglePath.move(to: CGPoint(x: 0, y: 0))
+        trianglePath.addLine(to: CGPoint(x: 0, y: -76))
+        trianglePath.addLine(to: CGPoint(x: 74, y: 0))
         trianglePath.closeSubpath()
         
         let triangleWall = SKShapeNode(path: trianglePath)
-        triangleWall.strokeColor = .clear
+        triangleWall.strokeColor = .brown
+        triangleWall.fillColor = .brown
         triangleWall.position = bumperLeft.position
+        triangleWall.zPosition = 99999
         
         let body = SKPhysicsBody(polygonFrom: trianglePath)
         body.isDynamic = false
@@ -1069,18 +1073,20 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     func addBumperRight(){
         let bumperRight = SKSpriteNode(imageNamed: "BumperRight")
         bumperRight.size = CGSize(width: 70, height: 70)
-        bumperRight.position = CGPoint(x: 355, y: 788)
+        bumperRight.position = CGPoint(x: 355, y: 823)
         bumperRight.name = "bumperRight"
         
         let trianglePath = CGMutablePath()
-        trianglePath.move(to: CGPoint(x: 35, y: 35))
-        trianglePath.addLine(to: CGPoint(x: 35, y: -42))
-        trianglePath.addLine(to: CGPoint(x: -31, y: 35))
+        trianglePath.move(to: CGPoint(x: 0, y: 0))
+        trianglePath.addLine(to: CGPoint(x: 0, y: -77))
+        trianglePath.addLine(to: CGPoint(x: -66, y: 0))
         trianglePath.closeSubpath()
         
         let triangleWall = SKShapeNode(path: trianglePath)
-        triangleWall.strokeColor = .clear
+        triangleWall.strokeColor = .brown
+        triangleWall.fillColor = .brown
         triangleWall.position = bumperRight.position
+        triangleWall.zPosition = 99999
         
         let body = SKPhysicsBody(polygonFrom: trianglePath)
         body.isDynamic = false
@@ -1097,7 +1103,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     func addBumperCenter(){
         bumperCenter = SKSpriteNode(imageNamed: "BumperCenter")
         bumperCenter.size = CGSize(width: 100, height: 100)
-        bumperCenter.position = CGPoint(x: 195, y: 480)
+        bumperCenter.position = CGPoint(x: 195, y: 510)
         
         let body = SKPhysicsBody(circleOfRadius: 3.0)
         body.isDynamic = false
@@ -1117,7 +1123,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         wall = SKSpriteNode(imageNamed: "Obstacle")
         wall.name = "obstacle"
         wall.size = CGSize(width: 50, height: 50)
-        wall.position =  CGPoint(x: wall.size.width / 2, y: 580)
+        wall.position =  CGPoint(x: wall.size.width / 2, y: 610)
         wall.physicsBody = SKPhysicsBody(rectangleOf: wall.size)
         wall.physicsBody!.isDynamic = false
         wall.physicsBody!.affectedByGravity = false
@@ -1131,7 +1137,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         wall = SKSpriteNode(imageNamed: "Obstacle")
         wall.name = "obstacle"
         wall.size = CGSize(width: 50, height: 50)
-        wall.position = CGPoint(x: wall.size.width / 2, y: 380)
+        wall.position = CGPoint(x: wall.size.width / 2, y: 410)
         wall.physicsBody = SKPhysicsBody(rectangleOf: wall.size)
         wall.physicsBody!.isDynamic = false
         wall.physicsBody!.affectedByGravity = false
@@ -1257,7 +1263,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     }
     
     func addBossItem(){
-        let delay = 1 * Double.random(in: 1...3)
+        let delay = 50 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),
