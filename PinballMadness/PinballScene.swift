@@ -52,6 +52,8 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     var timerColor: String = "green"
     
     var timeSurvivedValue: TimeInterval = 0
+    var countDownToStart: Int = 3
+    var countDownToStartLabel: SKLabelNode!
     
     var pinballWorldNode = SKNode()
     var backgroundWidth : CGFloat = 0
@@ -115,10 +117,23 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         timerBackground.position = CGPoint(x: size.width / 2, y: 850)
         pinballWorldNode.addChild(timerBackground)
         
+        //countdown to start
+        let tickAction = SKAction.run {
+            self.countDownToStart -= 1
+        }
+        
+        let waitAction = SKAction.wait(forDuration: 1.0)
+        
+        let sequence = SKAction.sequence([waitAction, tickAction])
+        let repeatTemp = SKAction.repeat(sequence, count: 3)
+    
+        self.run(repeatTemp, withKey: "countdownLoop")
+        
+        addCountdown()
         addTimer(position: CGPoint(x: timerBackground.position.x, y: timerBackground.position.y - 13), flipped: false)
         addLoseBox()
     }
-    
+
     struct PhysicsCategory {
         static let none: UInt32 = 0
         static let flipper: UInt32 = 0b1
@@ -178,6 +193,15 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         timerLabel.position = position
         timerLabel.name = "timer"
         pinballWorldNode.addChild(timerLabel)
+    }
+    
+    func addCountdown(){
+        countDownToStartLabel = SKLabelNode(fontNamed: "Copperplate-Bold")
+        countDownToStartLabel.position = CGPoint(x: timerBackground.position.x, y: timerBackground.position.y - 13)
+        countDownToStartLabel.fontSize = 48
+        countDownToStartLabel.zPosition = 1001
+        countDownToStartLabel.name = "countdown"
+        pinballWorldNode.addChild(countDownToStartLabel)
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -283,31 +307,55 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             let scale = maxSpeedBall / speedBall
             bodyBall.velocity = CGVector(dx: bodyBall.velocity.dx * scale, dy: bodyBall.velocity.dy * scale)
         }
-        
-        timerValue -= 1.0 / 60.0
-        timeSurvivedValue += 1.0 / 60.0
-        
-        if timerValue <= 60 {
-            timerColor = "red"
-            timerLabel.fontColor = SKColor.red.withAlphaComponent(0.75)
-        }
-        else if timerValue <= 120 {
-            timerColor = "yellow"
-            timerLabel.fontColor = SKColor.yellow.withAlphaComponent(0.75)
+        if countDownToStart == 0 {
+            for node in self.pinballWorldNode.children {
+                if node.name == "countdown" {
+                    print("removed")
+                    node.removeFromParent()
+                }
+            }
+
+            timerLabel.isHidden = false
+            ball.physicsBody?.isDynamic = true
+            timerValue -= 1.0 / 60.0
+            timeSurvivedValue += 1.0 / 60.0
+            
+            if timerValue <= 60 {
+                timerColor = "red"
+                timerLabel.fontColor = SKColor.red.withAlphaComponent(0.75)
+            }
+            else if timerValue <= 120 {
+                timerColor = "yellow"
+                timerLabel.fontColor = SKColor.yellow.withAlphaComponent(0.75)
+            }
+            else {
+                timerColor = "green"
+                timerLabel.fontColor = SKColor.green.withAlphaComponent(0.75)
+            }
+            
+            if timerValue <= 0 {
+                losePublisher.send()
+            }
+            
+            let minutes = Int(timerValue) / 60
+            let seconds = Int(timerValue) % 60
+            
+            timerLabel.text = String(format: "%02d:%02d", minutes, seconds)
         }
         else {
-            timerColor = "green"
-            timerLabel.fontColor = SKColor.green.withAlphaComponent(0.75)
+            timerLabel.isHidden = true
+            ball.physicsBody?.isDynamic = false
+            if countDownToStart == 3 {
+                countDownToStartLabel.fontColor = SKColor.red.withAlphaComponent(0.75)
+            }
+            else if countDownToStart == 2 {
+                countDownToStartLabel.fontColor = SKColor.yellow.withAlphaComponent(0.75)
+            }
+            else if countDownToStart == 1 {
+                countDownToStartLabel.fontColor = SKColor.green.withAlphaComponent(0.75)
+            }
+            countDownToStartLabel.text = String(countDownToStart)
         }
-        
-        if timerValue <= 0 {
-            losePublisher.send()
-        }
-        
-        let minutes = Int(timerValue) / 60
-        let seconds = Int(timerValue) % 60
-        
-        timerLabel.text = String(format: "%02d:%02d", minutes, seconds)
         
         if ball.position.x < 0 || ball.position.x > 375 {
             for node in self.pinballWorldNode.children {
@@ -1261,7 +1309,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     }
     
     func addBossItem(){
-        let delay = 1 * Double.random(in: 1...3)
+        let delay = 50 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),
