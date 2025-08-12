@@ -30,8 +30,8 @@
             filePath = "PinballMadness/ContentView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "590"
-            endingLineNumber = "590"
+            startingLineNumber = "591"
+            endingLineNumber = "591"
             landmarkName = "resumePinballScene(playerWon:scene:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -126,8 +126,8 @@
             filePath = "PinballMadness/ContentView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "620"
-            endingLineNumber = "620"
+            startingLineNumber = "621"
+            endingLineNumber = "621"
             landmarkName = "startGame()"
             landmarkType = "7">
          </BreakpointContent>

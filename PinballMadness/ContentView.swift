@@ -12,25 +12,25 @@ import Combine
 
 
 func makeStartupScene() -> StartupScene {
-    let scene = StartupScene(size: CGSize(width: 390, height: 944))
+    let scene = StartupScene(size: CGSize(width: 390, height: 844))
     scene.scaleMode = .resizeFill
     return scene
 }
 
 func makeSkinsScene() -> SkinsScene {
-    let scene = SkinsScene(size: CGSize(width: 390, height: 944))
+    let scene = SkinsScene(size: CGSize(width: 390, height: 844))
     scene.scaleMode = .resizeFill
     return scene
 }
 
 func makeAchievementsScene() -> AchievementScene {
-    let scene = AchievementScene(size: CGSize(width: 390, height: 944))
+    let scene = AchievementScene(size: CGSize(width: 390, height: 844))
     scene.scaleMode = .resizeFill
     return scene
 }
 struct ContentView: View {
     private var isPad: Bool {UIDevice.current.userInterfaceIdiom == .pad }
-    private let baseSize = CGSize(width: 390, height: 944)
+    private let baseSize = CGSize(width: 390, height: 844)
     
     @State private var pinballSceneID = UUID()
     @State private var startupSceneID = UUID()
@@ -346,28 +346,29 @@ struct ContentView: View {
                 .id(startupSceneID)
                 .ignoresSafeArea()
             if firstAchievementAchieved {
-                star.position(x: 100, y: isPad ? 295 : 285)
+                star.position(x: 100, y: isPad ? 260 : 235)
             }
             if secondAchievementAchieved {
-                star.position(x: 280, y: isPad ? 295 : 285)
+                star.position(x: 280, y: isPad ? 260 : 235)
             }
             if thirdAchievementAchieved {
-                star.position(x: 325, y: isPad ? 405 : 395)
+                star.position(x: 325, y: isPad ? 360 : 345)
             }
             if fourthAchievementAchieved {
-                star.position(x:195, y: isPad ? 405 : 395)
+                star.position(x:195, y: isPad ? 360 : 345)
             }
             if fifthAchievementAchieved {
-                star.position(x: 61, y: isPad ? 405 : 395)
+                star.position(x: 61, y: isPad ? 360 : 345)
             }
             Button {
+                print(geometry.size.height)
                 startGame()
             } label: {
                 Image("Start_Button")
                     .resizable()
                     .frame(width: 156, height: 156)
             }
-            .position(x: 195, y: 845)
+            .position(x: 195, y: 780)
             
             Button {
                 isSetting = true
@@ -377,7 +378,7 @@ struct ContentView: View {
                     .resizable()
                     .frame(width: 156, height: 156)
             }
-            .position(x: 195, y: 645)
+            .position(x: 195, y: 590)
             
             Button {
                 startupScene?.isPaused = true
@@ -388,7 +389,7 @@ struct ContentView: View {
                     .resizable()
                     .frame(width: 98, height: 98)
             }
-            .position(x: 52, y: 780)
+            .position(x: 52, y: 770)
             
             Button {
                 startupScene?.isPaused = true
@@ -399,7 +400,7 @@ struct ContentView: View {
                     .resizable()
                     .frame(width: 120, height: 120)
             }
-            .position(x: 330, y: 690)
+            .position(x: 330, y: 670)
             if isSetting {
                 Color.black.opacity(0.8)
                     .ignoresSafeArea()
@@ -626,7 +627,6 @@ struct ContentView: View {
         bossScene?.removeAllChildren()
         pinballScene?.removeAllChildren()
         pinballScene = PinballScene(size: CGSize(width: 390, height: 944))
-        pinballScene?.scaleMode = .resizeFill
         
         pinballScene?.ballSkin = ballDesign
         pinballScene?.activatedDupPower = false

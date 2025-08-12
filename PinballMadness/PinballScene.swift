@@ -112,7 +112,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         timerBackground.fillColor = SKColor.black.withAlphaComponent(1)
         timerBackground.strokeColor = .black
         timerBackground.zPosition = 1000
-        timerBackground.position = CGPoint(x: size.width / 2, y: 890)
+        timerBackground.position = CGPoint(x: size.width / 2, y: 850)
         pinballWorldNode.addChild(timerBackground)
         
         addTimer(position: CGPoint(x: timerBackground.position.x, y: timerBackground.position.y - 13), flipped: false)
@@ -1042,7 +1042,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     func addBumperLeft(){
         bumperLeft = SKSpriteNode(imageNamed: "BumperLeft")
         bumperLeft.size = CGSize(width: 70, height: 70)
-        bumperLeft.position = CGPoint(x: 35, y: 823)
+        bumperLeft.position = CGPoint(x: 35, y: 785)
         
         let trianglePath = CGMutablePath()
         trianglePath.move(to: CGPoint(x: 0, y: 0))
@@ -1073,7 +1073,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     func addBumperRight(){
         let bumperRight = SKSpriteNode(imageNamed: "BumperRight")
         bumperRight.size = CGSize(width: 70, height: 70)
-        bumperRight.position = CGPoint(x: 355, y: 823)
+        bumperRight.position = CGPoint(x: 355, y: 785)
         bumperRight.name = "bumperRight"
         
         let trianglePath = CGMutablePath()
@@ -1263,7 +1263,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     }
     
     func addBossItem(){
-        let delay = 50 * Double.random(in: 1...3)
+        let delay = 1 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),
