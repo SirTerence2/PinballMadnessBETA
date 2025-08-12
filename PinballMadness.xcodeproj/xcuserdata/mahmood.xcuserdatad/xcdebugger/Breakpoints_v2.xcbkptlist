@@ -78,8 +78,8 @@
             filePath = "PinballMadness/PinballScene.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1164"
-            endingLineNumber = "1164"
+            startingLineNumber = "1162"
+            endingLineNumber = "1162"
             landmarkName = "addItemDup()"
             landmarkType = "7">
          </BreakpointContent>
@@ -142,8 +142,8 @@
             filePath = "PinballMadness/PinballScene.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1136"
-            endingLineNumber = "1136"
+            startingLineNumber = "1134"
+            endingLineNumber = "1134"
             landmarkName = "addWallBottomLeft()"
             landmarkType = "7">
          </BreakpointContent>

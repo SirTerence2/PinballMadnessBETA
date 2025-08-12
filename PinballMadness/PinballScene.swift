@@ -1042,17 +1042,15 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     func addBumperLeft(){
         bumperLeft = SKSpriteNode(imageNamed: "BumperLeft")
         bumperLeft.size = CGSize(width: 70, height: 70)
-        bumperLeft.position = CGPoint(x: 35, y: 785)
+        bumperLeft.position = CGPoint(x: 35, y: 790)
         
         let trianglePath = CGMutablePath()
-        trianglePath.move(to: CGPoint(x: 0, y: 0))
-        trianglePath.addLine(to: CGPoint(x: 0, y: -76))
-        trianglePath.addLine(to: CGPoint(x: 74, y: 0))
+        trianglePath.move(to: CGPoint(x: -39, y: 34))
+        trianglePath.addLine(to: CGPoint(x: -39, y: -42))
+        trianglePath.addLine(to: CGPoint(x: 35, y: 34))
         trianglePath.closeSubpath()
         
         let triangleWall = SKShapeNode(path: trianglePath)
-        triangleWall.strokeColor = .brown
-        triangleWall.fillColor = .brown
         triangleWall.position = bumperLeft.position
         triangleWall.zPosition = 99999
         
@@ -1073,13 +1071,13 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     func addBumperRight(){
         let bumperRight = SKSpriteNode(imageNamed: "BumperRight")
         bumperRight.size = CGSize(width: 70, height: 70)
-        bumperRight.position = CGPoint(x: 355, y: 785)
+        bumperRight.position = CGPoint(x: 355, y: 790)
         bumperRight.name = "bumperRight"
         
         let trianglePath = CGMutablePath()
-        trianglePath.move(to: CGPoint(x: 0, y: 0))
-        trianglePath.addLine(to: CGPoint(x: 0, y: -77))
-        trianglePath.addLine(to: CGPoint(x: -66, y: 0))
+        trianglePath.move(to: CGPoint(x: 35, y: 35))
+        trianglePath.addLine(to: CGPoint(x: 35, y: -42))
+        trianglePath.addLine(to: CGPoint(x: -31, y: 35))
         trianglePath.closeSubpath()
         
         let triangleWall = SKShapeNode(path: trianglePath)
