@@ -38,8 +38,7 @@ struct ContentView: View {
     @State private var bossSceneID = UUID()
     @State private var achievementSceneID = UUID()
     @State private var skinsSceneID = UUID()
-    
-    @State private var isFlippedItemInEffect = false
+
     @State private var isDupBallThere = false
     
     @State private var screenDirection: String = "startup"
@@ -58,11 +57,11 @@ struct ContentView: View {
     @State private var achievementScene: AchievementScene? = makeAchievementsScene()
     @State private var skinsScene: SkinsScene? = makeSkinsScene()
     
-    @State internal var firstAchievementAchieved: Bool = true
-    @State internal var secondAchievementAchieved: Bool = true
-    @State internal var thirdAchievementAchieved: Bool = true
-    @State internal var fourthAchievementAchieved: Bool = true
-    @State internal var fifthAchievementAchieved: Bool = true
+    @State internal var firstAchievementAchieved: Bool = false
+    @State internal var secondAchievementAchieved: Bool = false
+    @State internal var thirdAchievementAchieved: Bool = false
+    @State internal var fourthAchievementAchieved: Bool = false
+    @State internal var fifthAchievementAchieved: Bool = false
     @State private var numberOfAchievementsAchieved: Int = 0
     
     @State private var playTime: TimeInterval = 0
@@ -71,6 +70,8 @@ struct ContentView: View {
     @State private var playTimerLabel: String = "00:00"
     @State private var ballCancellable: AnyCancellable?
     @State private var bossFightCount: Int = 0
+    
+    @State private var positionHistory: [(time: TimeInterval, pos: CGPoint, vel: CGVector?)] = []
     
     var body: some View {
         let star = Image("Star")
@@ -426,16 +427,16 @@ struct ContentView: View {
     @ViewBuilder
     func pinballScreenView(geometry: GeometryProxy, scene: PinballScene, settings: some View, background: some View, exit: some View, settingsButton: some View) -> some View {
         ZStack {
-            SpriteView(scene: scene)
+            SpriteView(scene: scene,
+                       options: [],
+                        debugOptions: [.showsPhysics, .showsNodeCount, .showsFPS])
                 .id(pinballSceneID)
                 .ignoresSafeArea()
                 .onReceive(scene.dupPublisher) { value in
                     isDupBallThere = value
                 }
-                .onReceive(scene.flipPublisher) {
-                    isFlippedItemInEffect.toggle()
-                }
                 .onReceive(scene.bossPublisher) {
+                    positionHistory = pinballScene?.positionHistory ?? []
                     pinballScene?.isPaused = true
                     let newBossScene = BossScene(size: CGSize(width: 390, height: 844), ballSkin: ballDesign, dupBallThere: isDupBallThere)
                     bossScene = newBossScene
@@ -460,7 +461,7 @@ struct ContentView: View {
             } label: {
                 settingsButton
             }
-            .position(x: 320, y: isFlippedItemInEffect ? 785 : 20)
+            .position(x: 320, y: 20)
             if isSetting {
                 Color.black.opacity(0.8)
                     .ignoresSafeArea()
@@ -588,6 +589,7 @@ struct ContentView: View {
             scene.flipRight.physicsBody?.isResting = true
             scene.flipRight.zRotation = .pi/3
             scene.rightPressed = false
+            scene.positionHistory = positionHistory
             screenDirection = "pinball"
             scene.ballSkin = ballDesign
             if !isDupBallThere {
@@ -630,7 +632,7 @@ struct ContentView: View {
         
         pinballScene?.ballSkin = ballDesign
         pinballScene?.activatedDupPower = false
-        pinballScene?.activatedFlipPower = false
+        pinballScene?.activatedRotaPower = false
         pinballScene?.activatedPunPower = false
         pinballScene?.activatedBossPower = false
         pinballSceneID = UUID()

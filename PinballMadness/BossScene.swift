@@ -24,11 +24,11 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     var flipRight: SKSpriteNode!
     var rightPressed = false
     
-    var bossHealth: Int = 20
+    var bossHealth: Int = 1000
     var bossPushAttack: SKSpriteNode!
     var bossLaserAttack: SKSpriteNode!
     
-    var ballHealth: Int = 1000
+    var ballHealth: Int = 500
     var chargedShot: Bool = false
     
     var meteor: SKSpriteNode!
@@ -147,8 +147,8 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         addBoss()
         addLoseBox()
         let attackAction = SKAction.run {
-            let random = Int.random(in: 0...1)
-            if random == 0 {
+            let random = Int.random(in: 0...2)
+            if random == 0 || random == 1 {
                 self.addPushAttack()
             } else {
                 self.addLaserAttack()
@@ -721,7 +721,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         bossPushAttack.name = "pushAttack"
         bossPushAttack.physicsBody?.categoryBitMask = PhysicsCategory.bossAttack
-        bossPushAttack.physicsBody?.collisionBitMask = PhysicsCategory.ball | PhysicsCategory.triangleWall | PhysicsCategory.rectangleWall | PhysicsCategory.ballDup
+        bossPushAttack.physicsBody?.collisionBitMask = PhysicsCategory.none
         bossPushAttack.physicsBody?.contactTestBitMask = PhysicsCategory.ball | PhysicsCategory.triangleWall | PhysicsCategory.rectangleWall | PhysicsCategory.ballDup
         
         addChild(bossPushAttack)
@@ -753,7 +753,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
 
         bossLaserAttack.name = "laserAttack"
         bossLaserAttack.physicsBody?.categoryBitMask = PhysicsCategory.bossAttack
-        bossLaserAttack.physicsBody?.collisionBitMask = PhysicsCategory.ball | PhysicsCategory.triangleWall | PhysicsCategory.rectangleWall | PhysicsCategory.ballDup
+        bossLaserAttack.physicsBody?.collisionBitMask = PhysicsCategory.none
         bossLaserAttack.physicsBody?.contactTestBitMask = PhysicsCategory.ball | PhysicsCategory.triangleWall | PhysicsCategory.rectangleWall | PhysicsCategory.ballDup
         
         addChild(bossLaserAttack)

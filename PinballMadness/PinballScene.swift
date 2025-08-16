@@ -15,6 +15,13 @@ extension CGPoint {
 
 class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     var ball: SKSpriteNode!
+    var pastBall: SKSpriteNode!
+    var positionHistory: [(time: TimeInterval, pos: CGPoint, vel: CGVector?)] = []
+    var hasUndoButton: Bool = false
+    var activatedPunItem: Bool = false
+    var currentTime: TimeInterval = 0
+    var ballPastPosition: CGPoint = .zero
+    var ballPastVelocity: CGVector = .zero
     var dupBall: SKSpriteNode!
     var ballSkin: String = "Pinball"
     
@@ -30,6 +37,8 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     var fistLeft: SKSpriteNode!
     var fistRight: SKSpriteNode!
     var fistAttack: SKSpriteNode!
+    var ableToPressFistLeft: Bool = true
+    var ableToPressFistRight: Bool = true
     
     var wall: SKSpriteNode!
     
@@ -43,8 +52,13 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     
     var activatedDupPower: Bool = false
     var activatedPunPower: Bool = false
-    var activatedFlipPower: Bool = false
+    var activatedRotaPower: Bool = false
     var activatedBossPower: Bool = false
+    
+    var numberOfRotaChecksCollided: Int = 0
+    var hitRotaItem: Bool = false
+    let maxChecks: Int = 10
+    var rotaItemCheck: SKSpriteNode!
     
     var timerLabel: SKLabelNode!
     var timerBackground: SKShapeNode!
@@ -54,6 +68,10 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     var timeSurvivedValue: TimeInterval = 0
     var countDownToStart: Int = 3
     var countDownToStartLabel: SKLabelNode!
+    
+    var timeLimitForRota: Int = 35
+    var timeLimitForRotaLabel: SKLabelNode!
+    var rotaUndoButton: SKSpriteNode!
     
     var pinballWorldNode = SKNode()
     var backgroundWidth : CGFloat = 0
@@ -68,15 +86,15 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     
     override func didMove(to view: SKView) {
         guard !isSceneSetup else {
-            self.addItemPun()
-            if !dupBallActive {
-                self.addItemDup()
+            self.removeAction(forKey: "itemCleanup")
+            self.summonedOtherItems = false
+            if !self.isRotaActive() {
+                self.spawnItem()
             }
-            self.addItemFlip()
-            self.addBossItem()
             return
         }
         isSceneSetup = true
+        pinballWorldNode.name = "headNode"
         
         addChild(pinballWorldNode)
         physicsBody = SKPhysicsBody(edgeLoopFrom: frame)
@@ -104,10 +122,9 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         addBumperRight()
         addBumperCenter()
         
-        addBossItem()
-        addItemDup()
-        addItemPun()
-        addItemFlip()
+        self.removeAction(forKey: "itemCleanup")
+        self.summonedOtherItems = false
+        spawnItem()
         
         timerBackground = SKShapeNode(rectOf: CGSize(width: 140, height: 60), cornerRadius: 10)
         timerBackground.name = "timeBackground"
@@ -143,13 +160,14 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         static let rectangleWall: UInt32 = 0b10000
         static let itemDupli: UInt32 = 0b100000
         static let itemPun: UInt32 = 0b1000000
-        static let itemFlip: UInt32 = 0b10000000
+        static let itemRota: UInt32 = 0b10000000
         static let fistLauncher: UInt32 = 0b100000000
         static let fistAttackLeft: UInt32 = 0b1000000000
         static let fistAttackRight: UInt32 = 0b10000000000
         static let itemBoss: UInt32 = 0b100000000000
         static let loseBox: UInt32 = 0b1000000000000
         static let ballDup: UInt32 = 0b10000000000000
+        static let itemRotaCheck: UInt32 = 0b1000000000000000
     }
     
     func didBegin(_ contact: SKPhysicsContact) {
@@ -197,11 +215,20 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     
     func addCountdown(){
         countDownToStartLabel = SKLabelNode(fontNamed: "Copperplate-Bold")
-        countDownToStartLabel.position = CGPoint(x: timerBackground.position.x, y: timerBackground.position.y - 13)
-        countDownToStartLabel.fontSize = 48
-        countDownToStartLabel.zPosition = 1001
-        countDownToStartLabel.name = "countdown"
-        pinballWorldNode.addChild(countDownToStartLabel)
+        addCountdownAppearance(labelTarget : countDownToStartLabel, name: "countdown")
+    }
+    
+    func addTimeLimitForRota(){
+        timeLimitForRotaLabel = SKLabelNode(fontNamed: "Copperplate-Bold")
+        addCountdownAppearance(labelTarget : timeLimitForRotaLabel, name: "timeLimitRota")
+    }
+    
+    func addCountdownAppearance(labelTarget : SKLabelNode, name: String) {
+        labelTarget.position = CGPoint(x: timerBackground.position.x, y: timerBackground.position.y - 13)
+        labelTarget.fontSize = 48
+        labelTarget.zPosition = 1001
+        labelTarget.name = name
+        if labelTarget.parent == nil { pinballWorldNode.addChild(labelTarget) }
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -228,7 +255,6 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 case "Pinball":
                     if self.jumpBoostAvailable {
                         self.jumpBoostAvailable = false
-                        // compute side vs center using BALL position
                         let ballX = self.ball.position.x
                         let ballDistanceLeft = ballX
                         let ballDistanceRight = self.frame.width - ballX
@@ -241,7 +267,6 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 case "PinballDup":
                     if self.jumpBoostAvailable {
                         self.jumpBoostAvailable = false
-                        // compute side vs center using DUP BALL position
                         let x = node.position.x
                         let left = x
                         let right = self.frame.width - x
@@ -253,36 +278,64 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     
                 case "fistLeft":
                     if let sprite = node as? SKSpriteNode {
+                        if sprite.action(forKey: "fistBusy") != nil {
+                            handled = true; stop.pointee = true
+                            break
+                        }
+                        sprite.run(SKAction.sequence([.wait(forDuration: 0.15)]), withKey: "fistBusy")
                         let positionMem = sprite.position
+
                         sprite.texture = SKTexture(imageNamed: "PistonCompressed")
-                        sprite.position = CGPoint(x: 0, y: 20)
+                        sprite.position = CGPoint(x: 390, y: 20)
                         self.addFistProjectile(isRight: false)
-                        
+
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             sprite.texture = SKTexture(imageNamed: "PistonUncompressed")
                             sprite.position = positionMem
                             sprite.physicsBody?.applyForce(CGVector(dx: 350, dy: 350))
                         }
+                        
                         handled = true
                         stop.pointee = true
                     }
                     
                 case "fistRight":
                     if let sprite = node as? SKSpriteNode {
+                        if sprite.action(forKey: "fistBusy") != nil {
+                            handled = true; stop.pointee = true
+                            break
+                        }
+                        sprite.run(SKAction.sequence([.wait(forDuration: 0.15)]), withKey: "fistBusy")
                         let positionMem = sprite.position
+
                         sprite.texture = SKTexture(imageNamed: "PistonCompressed")
                         sprite.xScale = -1
                         sprite.position = CGPoint(x: 390, y: 20)
                         self.addFistProjectile(isRight: true)
-                        
+
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             sprite.texture = SKTexture(imageNamed: "PistonUncompressed")
                             sprite.xScale = -1
                             sprite.position = positionMem
                             sprite.physicsBody?.applyForce(CGVector(dx: -350, dy: 350))
                         }
+                        
                         handled = true
                         stop.pointee = true
+                    }
+                
+                case "rotaUndoButton":
+                    if let sprite = node as? SKSpriteNode {
+                        self.ball.position = self.ballPastPosition
+                        handled = true
+                        stop.pointee = true
+                        sprite.removeFromParent()
+                        self.hasUndoButton = false
+                        for node in self.pinballWorldNode.children {
+                            if node.name == "PinballPast"{
+                                node.removeFromParent()
+                            }
+                        }
                     }
                     
                 default:
@@ -297,24 +350,28 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     override func update(_ currentTime: TimeInterval) {
         super.update(currentTime)
         
-        //control speed for main ball
-        guard let bodyBall = ball.physicsBody else { return }
+        positionHistory.append((time: currentTime, pos: ball.position, vel: ball.physicsBody?.velocity))
+        self.currentTime = currentTime
         
-        let speedBall = hypot(bodyBall.velocity.dx, bodyBall.velocity.dy)
-        let maxSpeedBall: CGFloat = 1000
-        
-        if speedBall > maxSpeedBall {
-            let scale = maxSpeedBall / speedBall
-            bodyBall.velocity = CGVector(dx: bodyBall.velocity.dx * scale, dy: bodyBall.velocity.dy * scale)
+        while let first = positionHistory.first, currentTime - first.time > 5 {
+            positionHistory.removeFirst()
         }
-        if countDownToStart == 0 {
+        
+        if let past = positionHistory.first {
+            ballPastPosition = past.pos
+            if pastBall != nil {
+                pastBall.position = ballPastPosition
+            }
+        }
+        
+        if countDownToStart == 0 && hitRotaItem == false {
             for node in self.pinballWorldNode.children {
                 if node.name == "countdown" {
                     print("removed")
                     node.removeFromParent()
                 }
             }
-
+            
             timerLabel.isHidden = false
             ball.physicsBody?.isDynamic = true
             timerValue -= 1.0 / 60.0
@@ -342,7 +399,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             
             timerLabel.text = String(format: "%02d:%02d", minutes, seconds)
         }
-        else {
+        else if countDownToStart != 0 && hitRotaItem == false {
             timerLabel.isHidden = true
             ball.physicsBody?.isDynamic = false
             if countDownToStart == 3 {
@@ -356,6 +413,62 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             }
             countDownToStartLabel.text = String(countDownToStart)
         }
+        else if countDownToStart == 0 && hitRotaItem == true {
+            for node in self.pinballWorldNode.children {
+                if node.name == "countdown" {
+                    print("removed")
+                    node.removeFromParent()
+                }
+            }
+            timerLabel.isHidden = true
+            if timeLimitForRota >= 30 {
+                timeLimitForRotaLabel.fontColor = SKColor.green.withAlphaComponent(0.75)
+            }
+            else if timeLimitForRota >= 15 {
+                timeLimitForRotaLabel.fontColor = SKColor.yellow.withAlphaComponent(0.75)
+            }
+            else if timeLimitForRota < 15 {
+                timeLimitForRotaLabel.fontColor = SKColor.red.withAlphaComponent(0.75)
+            }
+            timeLimitForRotaLabel.text = String(timeLimitForRota)
+            timeSurvivedValue += 1.0 / 60.0
+        }
+        
+        if numberOfRotaChecksCollided == maxChecks {
+            timeLimitForRota = 0
+            for node in self.pinballWorldNode.children {
+                if node.name == "timeLimitRota" {
+                    node.removeFromParent()
+                }
+            }
+            addUndoButton()
+            numberOfRotaChecksCollided = 0
+            timerLabel.isHidden = false
+            self.removeAction(forKey: "itemCleanup")
+            self.summonedOtherItems = false
+            self.spawnItem()
+        }
+        if timeLimitForRota == 0 {
+            hitRotaItem = false
+            for node in self.pinballWorldNode.children {
+                if node.name == "timeLimitRota" {
+                    node.removeFromParent()
+                }
+            }
+            if numberOfRotaChecksCollided == maxChecks {
+                addUndoButton()
+            } else {
+                for node in self.pinballWorldNode.children {
+                    if node.name == "rotaItemCheck" {
+                        node.removeFromParent()
+                    }
+                }
+            }
+            self.removeAction(forKey: "itemCleanup")
+            self.summonedOtherItems = false
+            self.spawnItem()
+            numberOfRotaChecksCollided = 0
+        }
         
         if ball.position.x < 0 || ball.position.x > 375 {
             for node in self.pinballWorldNode.children {
@@ -366,7 +479,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             addBall(position: CGPoint(x: 50, y: 500))
         }
         
-        if activatedDupPower && activatedPunPower && activatedBossPower && activatedFlipPower {
+        if activatedDupPower && activatedPunPower && activatedBossPower && activatedRotaPower {
             powerUpPublisher.send()
         }
         
@@ -376,9 +489,28 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             }
         }
         
+        guard let bodyBall = ball.physicsBody else { return }
+        
+        let speedBall = hypot(bodyBall.velocity.dx, bodyBall.velocity.dy)
+        let maxSpeedBall: CGFloat = 1000
+        
+        if speedBall > maxSpeedBall {
+            let scale = maxSpeedBall / speedBall
+            bodyBall.velocity = CGVector(dx: bodyBall.velocity.dx * scale, dy: bodyBall.velocity.dy * scale)
+        }
+        
         //control speed for dup ball
         if dupBallActive == false { return }
         guard let bodyBallDup = dupBall.physicsBody else { return }
+        
+        if dupBall.position.x < 0 || dupBall.position.x > 375 {
+            for node in self.pinballWorldNode.children {
+                if node.name == "PinballDup" {
+                    node.removeFromParent()
+                }
+            }
+            addDupBall()
+        }
         
         let speedDupBall = hypot(bodyBallDup.velocity.dx, bodyBallDup.velocity.dy)
         let maxSpeedDupBall: CGFloat = 800
@@ -478,7 +610,6 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 self.dupBallActive = true
                 self.dupPublisher.send(true)
                 
-                self.summonedOtherItems = false;
                 DispatchQueue.main.asyncAfter(deadline: .now() + 40.0){
                     for node in self.pinballWorldNode.children {
                         if node.name == "PinballDup" {
@@ -488,13 +619,10 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                             self.dupPublisher.send(false)
                         }
                     }
-                    if !self.dupBallActive {
-                        self.addItemDup()
-                    }
                 }
-                self.addItemPun()
-                self.addItemFlip()
-                self.addBossItem()
+                self.removeAction(forKey: "itemCleanup")
+                self.summonedOtherItems = false
+                self.spawnItem()
             }
         }
         else if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.itemPun {
@@ -528,85 +656,49 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                             node.removeFromParent()
                         }
                     }
+                    self.activatedPunItem = false
                     self.addLeftFlipper()
                     self.addRightFlipper()
-                    self.summonedOtherItems = false
+                    self.removeAction(forKey: "itemCleanup")
                 }
-                self.addItemPun()
-                if !self.dupBallActive {
-                    self.addItemDup()
+                
+                self.summonedOtherItems = false
+                if !self.isRotaActive() {
+                    self.spawnItem()
                 }
-                self.addItemFlip()
-                self.addBossItem()
             }
         }
-        else if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.itemFlip {
-            activatedFlipPower = true
+        else if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.itemRota {
             DispatchQueue.main.async {
-                otherNode.removeFromParent()
-                let sceneHeight = self.size.height
+                self.activatedRotaPower = true
+                self.timeLimitForRota = 35
+                self.hitRotaItem = true
                 
+                self.removeAction(forKey: "itemCleanup")
+
                 for node in self.pinballWorldNode.children {
-                    if node.name == "triangleWall" {
-                        node.removeFromParent()
-                    }
-                    
-                    if node.name == "timer" {
+                    if node.name == "bossItem" || node.name == "punItem" || node.name == "dupItem" || node.name == "rotaItem" {
                         node.removeFromParent()
                     }
                 }
+                self.summonedOtherItems = false
                 
-                for node in self.children {
-                    node.yScale *= -1
-                    
-                    let newY = sceneHeight - node.position.y
-                    node.position.y = newY
+                otherNode.removeFromParent()
+                let referenceForLimit = self.timeLimitForRota
+                for _ in 1...self.maxChecks {
+                    self.addItemRotaChecks()
+                }
+                self.addTimeLimitForRota()
+                let tickAction = SKAction.run {
+                    self.timeLimitForRota -= 1
                 }
                 
-                self.addTimer(position: CGPoint(x: self.timerBackground.position.x, y: self.timerBackground.position.y + 12), flipped: true)
+                let waitAction = SKAction.wait(forDuration: 1.0)
                 
-                self.addTrianglesLeftInverse(at: CGPoint(x: 0, y: 90))
-                self.addTrianglesRightInverse(at: CGPoint(x: 402, y: 90))
-                self.applyLeftFlipperImpulse()
-                self.applyRightFlipperImpulse()
+                let sequence = SKAction.sequence([waitAction, tickAction])
+                let repeatTemp = SKAction.repeat(sequence, count: referenceForLimit)
                 
-                self.flipPublisher.send()
-                DispatchQueue.main.asyncAfter(deadline:.now() + 7.5){
-                    self.physicsWorld.gravity.dy *= -0.3
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 15.0) {
-                    for node in self.children {
-                        node.yScale *= -1
-                        
-                        let newY = sceneHeight - node.position.y
-                        node.position.y = newY
-                    }
-                    
-                    for node in self.pinballWorldNode.children {
-                        if node.name == "triangleWall" {
-                            node.removeFromParent()
-                        }
-                        if node.name == "timer" {
-                            node.removeFromParent()
-                        }
-                    }
-                    self.addTimer(position: CGPoint(x: self.timerBackground.position.x, y: self.timerBackground.position.y - 13), flipped: true)
-                    
-                    self.timerLabel.yScale *= -1
-                    
-                    self.addTrianglesLeft(at: CGPoint(x: 0, y: -22))
-                    self.addTrianglesRight(at: CGPoint(x: 400, y: -11))
-                    
-                    self.flipPublisher.send()
-                    self.physicsWorld.gravity.dy *= (-10 / 3)
-                    
-                    self.addItemPun()
-                    if !self.dupBallActive {
-                        self.addItemDup()
-                    }
-                    self.addItemFlip()
-                    self.addBossItem()
-                }
+                self.run(repeatTemp, withKey: "timeLimitForRotaLoop")
             }
         }
         else if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.itemBoss {
@@ -616,12 +708,13 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 otherNode.removeFromParent()
                 
                 self.summonedOtherItems = false
-                self.addItemPun()
-                if !self.dupBallActive {
-                    self.addItemDup()
-                }
-                self.addItemFlip()
-                self.addBossItem()
+                self.spawnItem()
+            }
+        }
+        else if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.itemRotaCheck{
+            DispatchQueue.main.async {
+                self.numberOfRotaChecksCollided += 1
+                otherNode.removeFromParent()
             }
         }
     }
@@ -690,15 +783,27 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         ball.zPosition = -1
         ball.physicsBody?.restitution = 0.0
         ball.physicsBody?.friction = 0.5
+        ball.physicsBody?.allowsRotation = true
         ball.physicsBody?.linearDamping = 0.2
         ball.physicsBody?.angularDamping = 0.5
         ball.physicsBody?.isDynamic = true
         ball.physicsBody?.usesPreciseCollisionDetection = true
         ball.physicsBody?.categoryBitMask = PhysicsCategory.ball
-        ball.physicsBody?.collisionBitMask = PhysicsCategory.triangleWall | PhysicsCategory.flipper | PhysicsCategory.bumper | PhysicsCategory.rectangleWall | PhysicsCategory.ballDup | PhysicsCategory.ball
-        ball.physicsBody?.contactTestBitMask = PhysicsCategory.triangleWall | PhysicsCategory.flipper | PhysicsCategory.bumper | PhysicsCategory.rectangleWall | PhysicsCategory.itemDupli | PhysicsCategory.itemPun | PhysicsCategory.ball | PhysicsCategory.itemFlip | PhysicsCategory.fistAttackLeft | PhysicsCategory.fistLauncher | PhysicsCategory.fistAttackRight | PhysicsCategory.itemBoss | PhysicsCategory.loseBox
+        ball.physicsBody?.collisionBitMask = PhysicsCategory.triangleWall | PhysicsCategory.flipper | PhysicsCategory.bumper | PhysicsCategory.rectangleWall | PhysicsCategory.ballDup | PhysicsCategory.ball | PhysicsCategory.itemRota | PhysicsCategory.itemRotaCheck
+        ball.physicsBody?.contactTestBitMask = PhysicsCategory.triangleWall | PhysicsCategory.flipper | PhysicsCategory.bumper | PhysicsCategory.rectangleWall | PhysicsCategory.itemDupli | PhysicsCategory.itemPun | PhysicsCategory.ball | PhysicsCategory.itemRota | PhysicsCategory.fistAttackLeft | PhysicsCategory.fistLauncher | PhysicsCategory.fistAttackRight | PhysicsCategory.itemBoss | PhysicsCategory.loseBox | PhysicsCategory.itemRotaCheck
         
         pinballWorldNode.addChild(ball)
+    }
+    
+    func addPastBall(){
+        pastBall = SKSpriteNode(imageNamed: ballSkin)
+        pastBall.name = "PinballPast"
+        pastBall.size = CGSize(width: 55, height: 55)
+        pastBall.alpha = 0.4
+        pastBall.position = ballPastPosition
+        
+        pastBall.physicsBody = nil
+        pinballWorldNode.addChild(pastBall)
     }
     
     func addDupBall() {
@@ -716,7 +821,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         dupBall.physicsBody?.usesPreciseCollisionDetection = true
         dupBall.physicsBody?.categoryBitMask = PhysicsCategory.ballDup
         dupBall.physicsBody?.collisionBitMask = PhysicsCategory.triangleWall | PhysicsCategory.flipper | PhysicsCategory.bumper | PhysicsCategory.rectangleWall | PhysicsCategory.ball | PhysicsCategory.ballDup
-        dupBall.physicsBody?.contactTestBitMask = PhysicsCategory.triangleWall | PhysicsCategory.flipper | PhysicsCategory.bumper | PhysicsCategory.rectangleWall | PhysicsCategory.itemDupli | PhysicsCategory.itemPun | PhysicsCategory.ball | PhysicsCategory.itemFlip | PhysicsCategory.fistAttackLeft | PhysicsCategory.fistLauncher | PhysicsCategory.fistAttackRight | PhysicsCategory.itemBoss | PhysicsCategory.loseBox
+        dupBall.physicsBody?.contactTestBitMask = PhysicsCategory.triangleWall | PhysicsCategory.flipper | PhysicsCategory.bumper | PhysicsCategory.rectangleWall | PhysicsCategory.itemDupli | PhysicsCategory.itemPun | PhysicsCategory.ball | PhysicsCategory.itemRota | PhysicsCategory.fistAttackLeft | PhysicsCategory.fistLauncher | PhysicsCategory.fistAttackRight | PhysicsCategory.itemBoss | PhysicsCategory.loseBox
         
         pinballWorldNode.addChild(dupBall)
     }
@@ -727,7 +832,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         let body = SKPhysicsBody(rectangleOf: size)
         body.isDynamic = false
         ceiling.physicsBody = body
-        ceiling.position = CGPoint(x: 300, y: 863)
+        ceiling.position = CGPoint(x: 300, y: 830)
         ceiling.name = "ceiling"
         
         pinballWorldNode.addChild(ceiling)
@@ -752,20 +857,18 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         let W = size.width
         let H = size.height
         let s: CGFloat = isLeft ? 1 : -1
+        
 
-        // Main blade (a bit taller than the art so it slightly "over-covers")
         let blade = SKPhysicsBody(
             rectangleOf: CGSize(width: W * 0.56, height: H * 0.16),
             center: CGPoint(x: s * W * 0.26, y: 0)
         )
-
-        // Rounded tip
+        
         let tip = SKPhysicsBody(
             circleOfRadius: W * 0.09,
             center: CGPoint(x: s * W * 0.52, y: 0)
         )
 
-        // Root/hinge bulge to fill the inner gap
         let root = SKPhysicsBody(
             circleOfRadius: W * 0.11,
             center: CGPoint(x: s * W * 0.04, y: 0)
@@ -864,6 +967,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         flipRight.position = CGPoint(x: 324, y: 110)
         flipRight.name = "flipRight"
         
+
         flipRight.zRotation = rest
         flipRight.physicsBody = makeFlipperBody(isLeft: false, size: flipRight.size)
         pinballWorldNode.addChild(flipRight)
@@ -874,7 +978,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         pivot.position = hingeScene
         pivot.physicsBody = SKPhysicsBody(circleOfRadius: 1)
         pivot.physicsBody?.isDynamic = false
-        addChild(pivot)
+        pinballWorldNode.addChild(pivot)
         rightPivot = pivot
         
         let pin = SKPhysicsJointPin.joint(withBodyA: pivot.physicsBody!, bodyB: flipRight.physicsBody!, anchor: hingeScene)
@@ -945,7 +1049,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     
     func addFistProjectile(isRight: Bool){
         fistAttack = SKSpriteNode(imageNamed: "PistonProjectile")
-        fistAttack.size = CGSize(width: 200, height: 200)
+        fistAttack.size = CGSize(width: 300, height: 300)
         fistAttack.name = "fistAttack"
         if isRight{
             fistAttack.xScale *= -1
@@ -1018,8 +1122,8 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     func addTrianglesLeftInverse(at position: CGPoint){
         let trianglePath = CGMutablePath()
         trianglePath.move(to: CGPoint(x: 0, y: 0))
-        trianglePath.addLine(to: CGPoint(x: 0, y: 85))
-        trianglePath.addLine(to: CGPoint(x: 100, y: 0))
+        trianglePath.addLine(to: CGPoint(x: 0, y: 82))
+        trianglePath.addLine(to: CGPoint(x: 80, y: 0))
         trianglePath.closeSubpath()
         
         let triangleWall = SKShapeNode(path: trianglePath)
@@ -1066,8 +1170,8 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     func addTrianglesRightInverse(at position: CGPoint){
         let trianglePath = CGMutablePath()
         trianglePath.move(to: CGPoint(x: 0, y: 0))
-        trianglePath.addLine(to: CGPoint(x: 0, y: 85))
-        trianglePath.addLine(to: CGPoint(x: -100, y: 0))
+        trianglePath.addLine(to: CGPoint(x: 0, y: 82))
+        trianglePath.addLine(to: CGPoint(x: -80, y: 0))
         trianglePath.closeSubpath()
         
         let triangleWall = SKShapeNode(path: trianglePath)
@@ -1129,8 +1233,8 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         trianglePath.closeSubpath()
         
         let triangleWall = SKShapeNode(path: trianglePath)
-        triangleWall.strokeColor = .brown
-        triangleWall.fillColor = .brown
+        triangleWall.strokeColor = .clear
+        triangleWall.fillColor = .clear
         triangleWall.position = bumperRight.position
         triangleWall.zPosition = 99999
         
@@ -1208,7 +1312,8 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     }
     
     func addItemDup(){
-        let delay = 30 * Double.random(in: 1...3)
+        print("added dup")
+        let delay = 1 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),
@@ -1234,6 +1339,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     if(!self.summonedOtherItems){
                         self.summonedOtherItems = true
                         self.pinballWorldNode.addChild(dupItem)
+                        self.scheduleItemCleanup(after: 5.0)
                     }
                 }
             ]))
@@ -1241,7 +1347,8 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     }
     
     func addItemPun(){
-        let delay = 30 * Double.random(in: 1...3)
+        print("added pun")
+        let delay = 1 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),
@@ -1268,48 +1375,101 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     
                     if(!self.summonedOtherItems){
                         self.summonedOtherItems = true
+                        self.activatedPunItem = true
                         self.pinballWorldNode.addChild(punItem)
+                        self.scheduleItemCleanup(after: 5.0)
                     }
                 }
             ]))
         }
     }
     
-    func addItemFlip(){
-        let delay = 30 * Double.random(in: 1...3)
+    func addItemRota(){
+        print("added rota")
+        let delay = 1 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),
                 SKAction.run {
-                    let flipItem = SKSpriteNode(imageNamed: "Flip_Item")
-                    flipItem.name = "flipItem"
-                    flipItem.size = CGSize(width: 100, height: 100)
+                    let rotaItem = SKSpriteNode(imageNamed: "Rota_Item")
+                    rotaItem.name = "rotaItem"
+                    rotaItem.size = CGSize(width: 100, height: 100)
                     var position: CGPoint
                     repeat {
                         let randomX: CGFloat = CGFloat.random(in: 0...190)
                         let randomY: CGFloat = CGFloat.random(in: 220...422)
                         position = CGPoint(x: randomX, y: randomY)
                     } while position.distance(to: self.ball.position) < 100
-                    flipItem.position = position
-                    flipItem.physicsBody = SKPhysicsBody(rectangleOf: flipItem.size)
-                    flipItem.physicsBody!.isDynamic = false
-                    flipItem.physicsBody?.affectedByGravity = false
+                    rotaItem.position = position
+                    rotaItem.physicsBody = SKPhysicsBody(rectangleOf: rotaItem.size)
+                    rotaItem.physicsBody!.isDynamic = false
+                    rotaItem.physicsBody?.affectedByGravity = false
                     
-                    flipItem.physicsBody?.categoryBitMask = PhysicsCategory.itemFlip
-                    flipItem.physicsBody?.collisionBitMask = PhysicsCategory.ball
-                    flipItem.physicsBody?.contactTestBitMask = PhysicsCategory.none
+                    rotaItem.physicsBody?.categoryBitMask = PhysicsCategory.itemRota
+                    rotaItem.physicsBody?.collisionBitMask = PhysicsCategory.ball
+                    rotaItem.physicsBody?.contactTestBitMask = PhysicsCategory.none
                     
                     if(!self.summonedOtherItems){
                         self.summonedOtherItems = true
-                        self.pinballWorldNode.addChild(flipItem)
+                        self.pinballWorldNode.addChild(rotaItem)
+                        self.scheduleItemCleanup(after: 5.0)
                     }
                 }
             ]))
         }
     }
     
+    func addItemRotaChecks(){
+        rotaItemCheck = SKSpriteNode(imageNamed: "Rota_Item")
+        rotaItemCheck.name = "rotaItemCheck"
+        rotaItemCheck.size = CGSize(width: 100, height: 100)
+        var achievedMinDistanceFromEachOther: Bool = true
+        var position: CGPoint
+        var attempts = 0
+        repeat {
+            attempts += 1
+            achievedMinDistanceFromEachOther = true
+            let randomX: CGFloat = CGFloat.random(in: 0...280)
+            let randomY: CGFloat = CGFloat.random(in: 220...780)
+            position = CGPoint(x: randomX, y: randomY)
+            for node in self.pinballWorldNode.children {
+                if node.name == "rotaItemCheck" {
+                    if position.distance(to: node.position) < 150 {
+                        achievedMinDistanceFromEachOther = false
+                        break;
+                    }
+                }
+            }
+        } while (position.distance(to: self.ball.position) < 200 || !achievedMinDistanceFromEachOther) && attempts < 40
+        rotaItemCheck.position = position
+        rotaItemCheck.physicsBody = SKPhysicsBody(rectangleOf: rotaItemCheck.size)
+        rotaItemCheck.physicsBody!.isDynamic = false
+        rotaItemCheck.physicsBody?.affectedByGravity = false
+        
+        rotaItemCheck.physicsBody?.categoryBitMask = PhysicsCategory.itemRotaCheck
+        rotaItemCheck.physicsBody?.collisionBitMask = PhysicsCategory.ball
+        rotaItemCheck.physicsBody?.contactTestBitMask = PhysicsCategory.none
+        
+        pinballWorldNode.addChild(rotaItemCheck)
+    }
+    
+    func addUndoButton(){
+        rotaUndoButton = SKSpriteNode(imageNamed: "RotaButton")
+        rotaUndoButton.name = "rotaUndoButton"
+        rotaUndoButton.size = CGSize(width: 150, height: 150)
+        rotaUndoButton.position = CGPoint(x: 80, y: 890)
+        let body = SKPhysicsBody(rectangleOf: rotaUndoButton.size)
+        rotaUndoButton.physicsBody = body
+        rotaUndoButton.physicsBody?.isDynamic = false
+        rotaUndoButton.physicsBody?.affectedByGravity = false
+        hasUndoButton = true
+        pinballWorldNode.addChild(rotaUndoButton)
+        addPastBall()
+    }
+    
     func addBossItem(){
-        let delay = 50 * Double.random(in: 1...3)
+        print("added boss")
+        let delay = 1 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),
@@ -1335,9 +1495,113 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     if(!self.summonedOtherItems){
                         self.summonedOtherItems = true
                         self.pinballWorldNode.addChild(bossItem)
+                        self.scheduleItemCleanup(after: 5.0)
                     }
                 }
             ]))
         }
+    }
+    
+    func spawnItem() {
+        guard !isRotaActive() else { return }
+        let random = Int.random(in: 0...3)
+        if random == 0 {
+            if !activatedPunItem {
+                self.addItemPun()
+            }
+            else {
+                if !self.dupBallActive {
+                    self.addItemDup()
+                }
+                else {
+                    if !hasUndoButton {
+                        self.addItemRota()
+                    }
+                    else {
+                        self.addBossItem()
+                    }
+                }
+            }
+        } else if random == 1 {
+            if !self.dupBallActive {
+                self.addItemDup()
+            }
+            else {
+                let split = Int.random(in: 0...2)
+                if split == 0 {
+                    if !activatedPunItem {
+                        self.addItemPun()
+                    }
+                    else {
+                        if !self.dupBallActive {
+                            self.addItemDup()
+                        }
+                        else {
+                            if !hasUndoButton {
+                                self.addItemRota()
+                            }
+                            else {
+                                self.addBossItem()
+                            }
+                        }
+                    }
+                }
+                else if split == 1 {
+                    self.addItemRota()
+                }
+                else {
+                    self.addBossItem()
+                }
+            }
+        } else if random == 2 {
+            if !hasUndoButton {
+                self.addItemRota()
+            }
+            else {
+                if !activatedPunItem {
+                    self.addItemPun()
+                }
+                else {
+                    if !self.dupBallActive {
+                        self.addItemDup()
+                    }
+                    else {
+                        if !hasUndoButton {
+                            self.addItemRota()
+                        }
+                        else {
+                            self.addBossItem()
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            self.addBossItem()
+        }
+    }
+    
+    func scheduleItemCleanup(after seconds: TimeInterval = 5.0) {
+        self.removeAction(forKey: "itemCleanup")
+
+        let wait = SKAction.wait(forDuration: seconds)
+        let cleanup = SKAction.run { [weak self] in
+            guard let self = self, self.summonedOtherItems else { return }
+            for node in self.pinballWorldNode.children {
+                if node.name == "bossItem" || node.name == "rotaItem" || node.name == "punItem" || node.name == "dupItem" {
+                    node.removeFromParent()
+                }
+            }
+            self.summonedOtherItems = false
+            if !self.isRotaActive() {
+                self.spawnItem()
+            }
+        }
+
+        self.run(SKAction.sequence([wait, cleanup]), withKey: "itemCleanup")
+    }
+    
+    private func isRotaActive() -> Bool {
+        return hitRotaItem && timeLimitForRota > 0 && numberOfRotaChecksCollided < maxChecks
     }
 }
