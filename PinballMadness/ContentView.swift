@@ -288,8 +288,8 @@ struct ContentView: View {
                             .offset(y: -40)
                             .onAppear {
                                 playTime += pinballScene!.timeSurvivedValue
-                                minutes = Int(playTime) / 30
-                                seconds = Int(playTime) % 30
+                                minutes = Int(playTime) / 60
+                                seconds = Int(playTime) % 60
                                 if !thirdAchievementAchieved {
                                     thirdAchievementAchieved = playTime >= 180
                                     if thirdAchievementAchieved {

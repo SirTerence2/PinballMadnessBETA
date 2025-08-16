@@ -1313,7 +1313,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     
     func addItemDup(){
         print("added dup")
-        let delay = 1 * Double.random(in: 1...3)
+        let delay = 10 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),
@@ -1348,7 +1348,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     
     func addItemPun(){
         print("added pun")
-        let delay = 1 * Double.random(in: 1...3)
+        let delay = 10 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),
@@ -1386,7 +1386,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     
     func addItemRota(){
         print("added rota")
-        let delay = 1 * Double.random(in: 1...3)
+        let delay = 10 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),
@@ -1469,7 +1469,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     
     func addBossItem(){
         print("added boss")
-        let delay = 1 * Double.random(in: 1...3)
+        let delay = 20 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),
