@@ -13,6 +13,21 @@ extension CGPoint {
     }
 }
 
+
+extension SKNode {
+    func spinForever(revDuration: TimeInterval = 1.0, key: String = "spin") {
+        removeAction(forKey: key)
+        let spin = SKAction.rotate(byAngle: .pi * 2, duration: revDuration)
+        spin.timingMode = .linear
+        spin.speed = 0.3
+        run(.repeatForever(spin), withKey: key)
+    }
+    
+    func stopSpinning(key: String = "spin") {
+        removeAction(forKey: key)
+    }
+}
+
 class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     var ball: SKSpriteNode!
     var pastBall: SKSpriteNode!
@@ -1335,6 +1350,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     
                     if(!self.summonedOtherItems){
                         self.summonedOtherItems = true
+                        dupItem.spinForever()
                         self.pinballWorldNode.addChild(dupItem)
                         self.scheduleItemCleanup(after: 5.0)
                     }
@@ -1373,6 +1389,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     if(!self.summonedOtherItems){
                         self.summonedOtherItems = true
                         self.activatedPunItem = true
+                        punItem.spinForever()
                         self.pinballWorldNode.addChild(punItem)
                         self.scheduleItemCleanup(after: 5.0)
                     }
@@ -1408,6 +1425,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     
                     if(!self.summonedOtherItems){
                         self.summonedOtherItems = true
+                        rotaItem.spinForever()
                         self.pinballWorldNode.addChild(rotaItem)
                         self.scheduleItemCleanup(after: 5.0)
                     }
@@ -1491,6 +1509,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     
                     if(!self.summonedOtherItems){
                         self.summonedOtherItems = true
+                        bossItem.spinForever()
                         self.pinballWorldNode.addChild(bossItem)
                         self.scheduleItemCleanup(after: 5.0)
                     }

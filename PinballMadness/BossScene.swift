@@ -53,7 +53,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     private func preLaserWindup(
         on node: SKSpriteNode,
         overshoot: CGFloat = 1.22,
-        duration: TimeInterval = 1.0,
+        duration: TimeInterval = 1.8,
         key: String = "bossWindup",
         completion: @escaping () -> Void
     ) {
@@ -206,7 +206,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     override func didMove(to view: SKView) {
         physicsBody = SKPhysicsBody(edgeLoopFrom: frame)
         self.physicsWorld.contactDelegate = self
-        physicsWorld.gravity = CGVector(dx: 0, dy: -6)
+        physicsWorld.gravity = CGVector(dx: 0, dy: -10)
         backgroundColor = .clear
         
         addBackground()
@@ -230,8 +230,8 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         addBoss()
         addLoseBox()
         let attackAction = SKAction.run {
-            let random = Int.random(in: 0...2)
-            if random == 0 || random == 1 {
+            let random = Int.random(in: 0...1)
+            if random == 0 {
                 self.performPushAttack()
             } else {
                 self.performLaserAttack()
@@ -837,7 +837,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         if length == 0 { return }
 
         let normalized = CGVector(dx: direction.dx / length, dy: direction.dy / length)
-        let force = CGVector(dx: normalized.dx * -500, dy: normalized.dy * -500)
+        let force = CGVector(dx: normalized.dx * -700, dy: normalized.dy * -700)
         let angle = atan2(force.dy, force.dx)
         bossLaserAttack.zRotation = angle
 
