@@ -679,9 +679,9 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         ball.position = position
         ball.physicsBody = SKPhysicsBody(circleOfRadius: ball.size.width / 2)
         ball.zPosition = -1
-        ball.physicsBody?.restitution = 0.5
+        ball.physicsBody?.restitution = 0.0
         ball.physicsBody?.friction = 0.5
-        ball.physicsBody?.linearDamping = 0.2
+        ball.physicsBody?.linearDamping = 0.5
         ball.physicsBody?.angularDamping = 0.5
         ball.physicsBody?.isDynamic = true
         ball.physicsBody?.usesPreciseCollisionDetection = true
