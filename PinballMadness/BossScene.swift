@@ -820,7 +820,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     
     func addLaserAttack(){
         bossLaserAttack = SKSpriteNode(imageNamed: "BossAttackLaser")
-        bossLaserAttack.size = CGSize(width: 200, height: 100)
+        bossLaserAttack.size = CGSize(width: 100, height: 100)
         bossLaserAttack.position = CGPoint(x: frame.width / 2, y: 670)
         bossLaserAttack.xScale = -1
         
