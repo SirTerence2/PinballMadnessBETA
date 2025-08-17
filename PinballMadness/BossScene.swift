@@ -29,6 +29,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     var bossLaserAttack: SKSpriteNode!
     
     var ballHealth: Int = 500
+    let ballMaxHealth = 500
     var chargedShot: Bool = false
     
     var meteor: SKSpriteNode!
@@ -46,6 +47,88 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     let victoryPublisher = PassthroughSubject<Void, Never>()
     let losePublisher = PassthroughSubject<Void, Never>()
     let neverRecievedDamagePublisher = PassthroughSubject<Void, Never>()
+    
+    private var bossIsWindingUp = false
+    
+    private func preLaserWindup(
+        on node: SKSpriteNode,
+        overshoot: CGFloat = 1.22,
+        duration: TimeInterval = 1.0,
+        key: String = "bossWindup",
+        completion: @escaping () -> Void
+    ) {
+        guard node.action(forKey: key) == nil, !bossIsWindingUp else { return }
+        bossIsWindingUp = true
+        
+        let startScaleX = node.xScale
+        let startScaleY = node.yScale
+
+        let flashUp   = SKAction.colorize(with: .white, colorBlendFactor: 0.6, duration: duration * 0.15)
+        let flashDown = SKAction.colorize(withColorBlendFactor: 0.0, duration: duration * 0.20)
+
+        let grow  = SKAction.scale(to: overshoot, duration: duration * 0.65)
+        grow.timingMode = .easeOut
+        let snap  = SKAction.scale(to: 1.00, duration: duration * 0.25)
+        snap.timingMode = .easeIn
+
+        let resetScale = SKAction.group([
+            SKAction.scaleX(to: startScaleX, duration: 0.05),
+            SKAction.scaleY(to: startScaleY, duration: 0.05)
+        ])
+        
+        let group1 = SKAction.group([grow, flashUp])
+        let group2 = SKAction.group([snap, flashDown])
+        
+        node.run(.sequence([
+            group1,
+            group2,
+            resetScale,
+            .run { [weak self] in
+                self?.bossIsWindingUp = false
+                completion()
+            }
+        ]), withKey: key)
+    }
+    
+    private func preWindCompress(
+        on node: SKSpriteNode,
+        overshoot: CGFloat = 0.78,
+        duration: TimeInterval = 0.7,
+        key: String = "bossCompress",
+        completion: @escaping () -> Void
+    ) {
+        guard node.action(forKey: key) == nil, !bossIsWindingUp else { return }
+        bossIsWindingUp = true
+        
+        let startScaleX = node.xScale
+        let startScaleY = node.yScale
+
+        let flashUp   = SKAction.colorize(with: .white, colorBlendFactor: 0.6, duration: duration * 0.15)
+        let flashDown = SKAction.colorize(withColorBlendFactor: 0.0, duration: duration * 0.20)
+
+        let shrink  = SKAction.scale(to: overshoot, duration: duration * 0.65)
+        shrink.timingMode = .easeOut
+        let snap  = SKAction.scale(to: 1.00, duration: duration * 0.25)
+        snap.timingMode = .easeIn
+
+        let resetScale = SKAction.group([
+            SKAction.scaleX(to: startScaleX, duration: 0.05),
+            SKAction.scaleY(to: startScaleY, duration: 0.05)
+        ])
+        
+        let group1 = SKAction.group([shrink, flashDown])
+        let group2 = SKAction.group([snap, flashUp])
+        
+        node.run(.sequence([
+            group1,
+            group2,
+            resetScale,
+            .run { [weak self] in
+                self?.bossIsWindingUp = false
+                completion()
+            }
+        ]), withKey: key)
+    }
     
     init(size: CGSize, ballSkin: String, dupBallThere: Bool) {
         self.ballSkin = ballSkin
@@ -91,7 +174,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         }
         
         if bossHealth <= 0 {
-            if ballHealth == 1000 {
+            if ballHealth == ballMaxHealth {
                 neverRecievedDamagePublisher.send()
             }
             clearScene()
@@ -149,9 +232,9 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         let attackAction = SKAction.run {
             let random = Int.random(in: 0...2)
             if random == 0 || random == 1 {
-                self.addPushAttack()
+                self.performPushAttack()
             } else {
-                self.addLaserAttack()
+                self.performLaserAttack()
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                 for node in self.children {
@@ -694,7 +777,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         addChild(boss)
     }
-    
+   
     func addPushAttack(){
         bossPushAttack = SKSpriteNode(imageNamed: "BossAttackPush")
         bossPushAttack.size = CGSize(width: 150, height: 150)
@@ -728,6 +811,13 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         bossPushAttack.physicsBody?.velocity = force
     }
     
+    private func performPushAttack() {
+        guard boss.parent != nil else { return }
+        preWindCompress(on: boss) { [weak self] in
+            self?.addPushAttack()
+        }
+    }
+    
     func addLaserAttack(){
         bossLaserAttack = SKSpriteNode(imageNamed: "BossAttackLaser")
         bossLaserAttack.size = CGSize(width: 200, height: 100)
@@ -758,6 +848,13 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         addChild(bossLaserAttack)
         bossLaserAttack.physicsBody?.velocity = force
+    }
+    
+    private func performLaserAttack() {
+        guard boss.parent != nil else { return }
+        preLaserWindup(on: boss) { [weak self] in
+            self?.addLaserAttack()
+        }
     }
     
     func addCeiling(){

@@ -285,7 +285,7 @@ struct ContentView: View {
                         Image("GameOverScene")
                             .resizable()
                             .frame(width: 390, height: 1000)
-                            .offset(y: -40)
+                            .offset(y: -60)
                             .onAppear {
                                 playTime += pinballScene!.timeSurvivedValue
                                 minutes = Int(playTime) / 60
@@ -603,7 +603,7 @@ struct ContentView: View {
             scene.physicsWorld.gravity = CGVector(dx: 0, dy: -3)
             scene.jumpBoostAvailable = true
             if !playerWon {
-                scene.timerValue -= 75
+                scene.timerValue -= 150
             }
             else {
                 scene.timerValue += 75

@@ -436,38 +436,10 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         
         if numberOfRotaChecksCollided == maxChecks {
             timeLimitForRota = 0
-            for node in self.pinballWorldNode.children {
-                if node.name == "timeLimitRota" {
-                    node.removeFromParent()
-                }
-            }
-            addUndoButton()
-            numberOfRotaChecksCollided = 0
-            timerLabel.isHidden = false
-            self.removeAction(forKey: "itemCleanup")
-            self.summonedOtherItems = false
-            self.spawnItem()
+            endRotaPhase(didCompleteAllChecks: true)
         }
-        if timeLimitForRota == 0 {
-            hitRotaItem = false
-            for node in self.pinballWorldNode.children {
-                if node.name == "timeLimitRota" {
-                    node.removeFromParent()
-                }
-            }
-            if numberOfRotaChecksCollided == maxChecks {
-                addUndoButton()
-            } else {
-                for node in self.pinballWorldNode.children {
-                    if node.name == "rotaItemCheck" {
-                        node.removeFromParent()
-                    }
-                }
-            }
-            self.removeAction(forKey: "itemCleanup")
-            self.summonedOtherItems = false
-            self.spawnItem()
-            numberOfRotaChecksCollided = 0
+        else if hitRotaItem && timeLimitForRota == 0 {
+            endRotaPhase(didCompleteAllChecks: false)
         }
         
         if ball.position.x < 0 || ball.position.x > 375 {
@@ -520,6 +492,31 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             bodyBallDup.velocity = CGVector(dx: bodyBallDup.velocity.dx * scale, dy: bodyBallDup.velocity.dy * scale)
         }
         
+    }
+    
+    private func endRotaPhase(didCompleteAllChecks: Bool) {
+        self.removeAction(forKey: "timeLimitForRotaLoop")
+        for node in self.pinballWorldNode.children where node.name == "timeLimitRota" {
+            node.removeFromParent()
+        }
+        
+        if didCompleteAllChecks {
+            addUndoButton()
+        } else {
+            for node in self.pinballWorldNode.children where node.name == "rotaItemCheck" {
+                node.removeFromParent()
+            }
+        }
+        
+        hitRotaItem = false
+        numberOfRotaChecksCollided = 0
+        timeLimitForRota = -1
+        timerLabel.isHidden = false
+
+        self.removeAction(forKey: "itemCleanup")
+        self.removeAction(forKey: "spawnDelay")
+        self.summonedOtherItems = false
+        self.spawnItem()
     }
     
     func ballFistProjectileCollision(_ contact: SKPhysicsContact){
@@ -1469,7 +1466,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     
     func addBossItem(){
         print("added boss")
-        let delay = 20 * Double.random(in: 1...3)
+        let delay = 1 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),
