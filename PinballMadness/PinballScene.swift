@@ -17,10 +17,15 @@ extension CGPoint {
 extension SKNode {
     func spinForever(revDuration: TimeInterval = 1.0, key: String = "spin") {
         removeAction(forKey: key)
-        let spin = SKAction.rotate(byAngle: .pi * 2, duration: revDuration)
+        let spin = SKAction.rotate(byAngle: .pi / 3, duration: revDuration)
         spin.timingMode = .linear
-        spin.speed = 0.3
-        run(.repeatForever(spin), withKey: key)
+        spin.speed = 1.4
+        
+        let reverseSpin = SKAction.rotate(byAngle: -2 * .pi / 3, duration: revDuration)
+        reverseSpin.timingMode = .linear
+        reverseSpin.speed = 0.7
+
+        run(.repeatForever(SKAction.sequence([spin, reverseSpin, spin])), withKey: key)
     }
     
     func stopSpinning(key: String = "spin") {
@@ -52,8 +57,9 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     var fistLeft: SKSpriteNode!
     var fistRight: SKSpriteNode!
     var fistAttack: SKSpriteNode!
-    var ableToPressFistLeft: Bool = true
-    var ableToPressFistRight: Bool = true
+    var fistAttackTimer: Int = 20
+    var fistAttackTimerLabel: SKLabelNode!
+    var hitFistItem: Bool = false
     
     var wall: SKSpriteNode!
     
@@ -246,6 +252,11 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         if labelTarget.parent == nil { pinballWorldNode.addChild(labelTarget) }
     }
     
+    func addTimeLimitForFist(){
+        fistAttackTimerLabel = SKLabelNode(fontNamed: "Copperplate-Bold")
+        addCountdownAppearance(labelTarget : fistAttackTimerLabel, name: "fistAttackTimeLimit")
+    }
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         for touch in touches {
             let p = touch.location(in: self)
@@ -379,14 +390,25 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             }
         }
         
-        if countDownToStart == 0 && hitRotaItem == false {
+        if countDownToStart == 0 && hitRotaItem == false && !hitFistItem {
             for node in self.pinballWorldNode.children {
                 if node.name == "countdown" {
                     print("removed")
                     node.removeFromParent()
                 }
             }
-            
+            for node in self.pinballWorldNode.children {
+                if node.name == "timeLimitRota" {
+                    print("removed")
+                    node.removeFromParent()
+                }
+            }
+            for node in self.pinballWorldNode.children {
+                if node.name == "fistAttackTimeLimit" {
+                    print("removed")
+                    node.removeFromParent()
+                }
+            }
             timerLabel.isHidden = false
             ball.physicsBody?.isDynamic = true
             timerValue -= 1.0 / 60.0
@@ -414,7 +436,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             
             timerLabel.text = String(format: "%02d:%02d", minutes, seconds)
         }
-        else if countDownToStart != 0 && hitRotaItem == false {
+        else if countDownToStart != 0 && hitRotaItem == false && !hitFistItem {
             timerLabel.isHidden = true
             ball.physicsBody?.isDynamic = false
             if countDownToStart == 3 {
@@ -428,7 +450,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             }
             countDownToStartLabel.text = String(countDownToStart)
         }
-        else if countDownToStart == 0 && hitRotaItem == true {
+        else if countDownToStart == 0 && hitRotaItem == true && !hitFistItem {
             for node in self.pinballWorldNode.children {
                 if node.name == "countdown" {
                     print("removed")
@@ -446,6 +468,20 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 timeLimitForRotaLabel.fontColor = SKColor.red.withAlphaComponent(0.75)
             }
             timeLimitForRotaLabel.text = String(timeLimitForRota)
+            timeSurvivedValue += 1.0 / 60.0
+            
+        } else if countDownToStart == 0 && hitRotaItem == false && hitFistItem {
+            timerLabel.isHidden = true
+            if fistAttackTimer >= 15 {
+                fistAttackTimerLabel.fontColor = SKColor.green.withAlphaComponent(0.75)
+            }
+            else if fistAttackTimer >= 10 {
+                fistAttackTimerLabel.fontColor = SKColor.yellow.withAlphaComponent(0.75)
+            }
+            else if fistAttackTimer < 10 {
+                fistAttackTimerLabel.fontColor = SKColor.red.withAlphaComponent(0.75)
+            }
+            fistAttackTimerLabel.text = String(fistAttackTimer)
             timeSurvivedValue += 1.0 / 60.0
         }
         
@@ -639,6 +675,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         }
         else if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.itemPun {
             activatedPunPower = true
+            hitFistItem = true
             DispatchQueue.main.async {
                 otherNode.removeFromParent()
                 if let jp = self.leftPin  { self.physicsWorld.remove(jp); self.leftPin  = nil }
@@ -660,9 +697,21 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     }
                 }
                 
+                self.addTimeLimitForFist()
+                let tickAction = SKAction.run {
+                    self.fistAttackTimer -= 1
+                }
+                
+                let waitAction = SKAction.wait(forDuration: 1.0)
+                
+                let sequence = SKAction.sequence([waitAction, tickAction])
+                let repeatTemp = SKAction.repeat(sequence, count: 20)
+                
+                self.run(repeatTemp, withKey: "timeLimitForPun")
+                
                 self.addFistsLeft()
                 self.addFistsRight()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 10.0){
+                DispatchQueue.main.asyncAfter(deadline: .now() + 20.0){
                     for node in self.pinballWorldNode.children {
                         if node.name == "fistLeft" || node.name == "fistRight"{
                             node.removeFromParent()
@@ -671,6 +720,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     self.activatedPunItem = false
                     self.addLeftFlipper()
                     self.addRightFlipper()
+                    self.hitFistItem = false
                     self.removeAction(forKey: "itemCleanup")
                 }
                 
@@ -1484,7 +1534,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     
     func addBossItem(){
         print("added boss")
-        let delay = 1 * Double.random(in: 1...3)
+        let delay = 10 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),
@@ -1522,7 +1572,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         guard !isRotaActive() else { return }
         let random = Int.random(in: 0...3)
         if random == 0 {
-            if !activatedPunItem {
+            if !hitFistItem {
                 self.addItemPun()
             }
             else {
@@ -1530,12 +1580,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     self.addItemDup()
                 }
                 else {
-                    if !hasUndoButton {
-                        self.addItemRota()
-                    }
-                    else {
-                        self.addBossItem()
-                    }
+                    self.addBossItem()
                 }
             }
         } else if random == 1 {
@@ -1545,7 +1590,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             else {
                 let split = Int.random(in: 0...2)
                 if split == 0 {
-                    if !activatedPunItem {
+                    if !hitFistItem {
                         self.addItemPun()
                     }
                     else {
@@ -1553,12 +1598,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                             self.addItemDup()
                         }
                         else {
-                            if !hasUndoButton {
-                                self.addItemRota()
-                            }
-                            else {
-                                self.addBossItem()
-                            }
+                            self.addBossItem()
                         }
                     }
                 }
@@ -1574,7 +1614,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 self.addItemRota()
             }
             else {
-                if !activatedPunItem {
+                if !hitFistItem {
                     self.addItemPun()
                 }
                 else {

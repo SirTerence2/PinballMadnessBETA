@@ -376,7 +376,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
                         let ballDistanceLeft = ballX
                         let ballDistanceRight = self.frame.width - ballX
                         let dx: CGFloat = (ballDistanceLeft <= ballDistanceRight) ? 100 : -100
-                        self.ball.physicsBody?.applyImpulse(CGVector(dx: dx, dy: 100))
+                        self.ball.physicsBody?.applyImpulse(CGVector(dx: dx, dy: 0))
                     }
                     handled = true
                     stop.pointee = true
@@ -389,7 +389,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
                         let left = x
                         let right = self.frame.width - x
                         let dx: CGFloat = (left <= right) ? 100 : -100
-                        node.physicsBody?.applyImpulse(CGVector(dx: dx, dy: 100))
+                        node.physicsBody?.applyImpulse(CGVector(dx: dx, dy: 0))
                     }
                     handled = true
                     stop.pointee = true
