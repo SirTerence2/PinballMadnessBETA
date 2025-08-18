@@ -721,6 +721,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     self.addLeftFlipper()
                     self.addRightFlipper()
                     self.hitFistItem = false
+                    self.fistAttackTimer = 20
                     self.removeAction(forKey: "itemCleanup")
                 }
                 
