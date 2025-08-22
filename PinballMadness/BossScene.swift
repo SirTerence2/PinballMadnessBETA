@@ -20,9 +20,22 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     var boss: SKSpriteNode!
     
     var flipLeft: SKSpriteNode!
-    var leftPressed = false
     var flipRight: SKSpriteNode!
-    var rightPressed = false
+    var leftPin: SKPhysicsJointPin?
+    var rightPin: SKPhysicsJointPin?
+    var leftPivot: SKNode?
+    var rightPivot: SKNode?
+    
+    private var leftTouchDown = false
+    private var rightTouchDown = false
+
+    private let leftRest: CGFloat = -.pi/3
+    private let leftPressedAngle: CGFloat =  .pi/3
+    private let rightRest: CGFloat =  .pi/3
+    private let rightPressedAngle: CGFloat = -.pi/3
+    
+    private var leftOwner: UITouch?
+    private var rightOwner: UITouch?
     
     var bossHealth: Int = 1000
     var bossPushAttack: SKSpriteNode!
@@ -163,6 +176,8 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     
     override func update(_ currentTime: TimeInterval) {
         super.update(currentTime)
+        driveFlipper(flipLeft,  pressed: leftTouchDown,  pressedTarget: leftPressedAngle,  restTarget: leftRest)
+        driveFlipper(flipRight, pressed: rightTouchDown, pressedTarget: rightPressedAngle, restTarget: rightRest)
         guard let body = ball.physicsBody else { return }
 
         let speed = hypot(body.velocity.dx, body.velocity.dy)
@@ -204,6 +219,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     }
     
     override func didMove(to view: SKView) {
+        view.isMultipleTouchEnabled = true
         physicsBody = SKPhysicsBody(edgeLoopFrom: frame)
         self.physicsWorld.contactDelegate = self
         physicsWorld.gravity = CGVector(dx: 0, dy: -10)
@@ -266,9 +282,9 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         self.run(repeatForever, withKey: "spawnLoop")
 
-        addBackground(position: CGPoint(x: 60, y: 795))
+        addBackground(position: CGPoint(x: 60, y: 790))
         hpLabelBoss = SKLabelNode(fontNamed: "Copperplate-Bold")
-        hpLabelBoss.fontSize = 23
+        hpLabelBoss.fontSize = 20
         if bossHealth >= 400 {
             hpLabelBoss.fontColor = SKColor.green.withAlphaComponent(0.75)
         }
@@ -281,23 +297,23 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         hpLabelBoss.zPosition = 1001
         hpLabelBoss.text = String(bossHealth)
-        hpLabelBoss.position = CGPoint(x: 60, y: hpBackground.position.y - 15)
+        hpLabelBoss.position = CGPoint(x: 60, y: hpBackground.position.y - 12.5)
         hpLabelBoss.name = "hpBoss"
         
         hpCategoryBoss = SKLabelNode(fontNamed: "Copperplate-Bold")
-        hpCategoryBoss.fontSize = 20
+        hpCategoryBoss.fontSize = 18
         hpCategoryBoss.zPosition = 1001
         hpCategoryBoss.fontColor = SKColor.red.withAlphaComponent(0.75)
-        hpCategoryBoss.position = CGPoint(x: hpLabelBoss.position.x, y: hpLabelBoss.position.y + 20)
+        hpCategoryBoss.position = CGPoint(x: hpLabelBoss.position.x, y: hpLabelBoss.position.y + 15)
         hpCategoryBoss.text = "Boss:"
         hpCategoryBoss.name = "hpCategoryBoss"
         
         addChild(hpCategoryBoss)
         addChild(hpLabelBoss)
         
-        addBackground(position: CGPoint(x: 330, y: 795))
+        addBackground(position: CGPoint(x: 330, y: 790))
         hpLabelPlayer = SKLabelNode(fontNamed: "Copperplate-Bold")
-        hpLabelPlayer.fontSize = 22
+        hpLabelPlayer.fontSize = 18
         if ballHealth >= 400 {
             hpLabelPlayer.fontColor = SKColor.green.withAlphaComponent(0.75)
         }
@@ -310,14 +326,14 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         hpLabelPlayer.zPosition = 1001
         hpLabelPlayer.text = String(ballHealth)
-        hpLabelPlayer.position = CGPoint(x: 330, y: hpBackground.position.y - 15)
+        hpLabelPlayer.position = CGPoint(x: 330, y: hpBackground.position.y - 12.5)
         hpLabelPlayer.name = "hpPlayer"
         
         hpCategoryPlayer = SKLabelNode(fontNamed: "Copperplate-Bold")
         hpCategoryPlayer.fontSize = 15
         hpCategoryPlayer.zPosition = 1001
         hpCategoryPlayer.fontColor = SKColor.green.withAlphaComponent(0.75)
-        hpCategoryPlayer.position = CGPoint(x: hpLabelPlayer.position.x, y: hpLabelPlayer.position.y + 20)
+        hpCategoryPlayer.position = CGPoint(x: hpLabelPlayer.position.x, y: hpLabelPlayer.position.y + 15)
         hpCategoryPlayer.text = "Player:"
         hpCategoryPlayer.name = "hpCategory"
         
@@ -326,7 +342,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func addBackground(position: CGPoint){
-        hpBackground = SKShapeNode(rectOf: CGSize(width: 100, height: 40), cornerRadius: 10)
+        hpBackground = SKShapeNode(rectOf: CGSize(width: 100, height: 30), cornerRadius: 10)
         hpBackground.name = "timeBackground"
         hpBackground.fillColor = SKColor.black.withAlphaComponent(1)
         hpBackground.strokeColor = .black
@@ -347,6 +363,27 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         dupBallLoseBoxCollision(contact)
     }
     
+    private func shortestAngle(_ a: CGFloat, _ b: CGFloat) -> CGFloat {
+        var d = (b - a).truncatingRemainder(dividingBy: 2*CGFloat.pi)
+        if d >= .pi { d -= 2*CGFloat.pi }
+        if d < -.pi { d += 2*CGFloat.pi }
+        return d
+    }
+
+    private func driveFlipper(_ node: SKSpriteNode?, pressed: Bool, pressedTarget: CGFloat, restTarget: CGFloat) {
+        guard let body = node?.physicsBody, let node = node else { return }
+        let target = pressed ? pressedTarget : restTarget
+
+        // 🔧 Stronger gains & torque when returning to rest
+        let Kp: CGFloat   = pressed ? 180 : 280
+        let Kd: CGFloat   = pressed ? 20  : 35
+        let maxT: CGFloat = pressed ? 900 : 1600
+
+        let err = shortestAngle(node.zRotation, target)
+        let torque = max(-maxT, min(maxT, Kp * err - Kd * body.angularVelocity))
+        body.applyTorque(torque)
+    }
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         for touch in touches {
             let p = touch.location(in: self)
@@ -356,17 +393,16 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
             physicsWorld.enumerateBodies(at: p) { body, stop in
                 guard let node = body.node else { return }
                 switch node.name {
-                case "flipLeft", "flipLeftTap":
-                    self.leftPressed = true
-                    self.applyLeftFlipperImpulse()
-                    handled = true
-                    stop.pointee = true
-                    
-                case "flipRight", "flipRightTap":
-                    self.rightPressed = true
-                    self.applyRightFlipperImpulse()
-                    handled = true
-                    stop.pointee = true
+                case "flipLeft", "flipLeftTap" where self.leftOwner == nil:
+                    self.leftOwner = touch
+                    self.leftTouchDown = true
+                    self.flipLeft.physicsBody?.angularVelocity = 0
+                    self.flipLeft.physicsBody?.applyAngularImpulse(420)
+                case "flipRight", "flipRightTap" where self.rightOwner == nil:
+                    self.rightOwner = touch
+                    self.rightTouchDown = true
+                    self.flipRight.physicsBody?.angularVelocity = 0
+                    self.flipRight.physicsBody?.applyAngularImpulse(-420)
                     
                 case "Pinball":
                     if self.jumpBoostAvailable {
@@ -964,33 +1000,45 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         return body
     }
     
+    private func makePivot(at localPos: CGPoint) -> SKNode {
+        let pivot = SKNode()
+        pivot.position = localPos
+        pivot.physicsBody = SKPhysicsBody(circleOfRadius: 1)
+        pivot.physicsBody?.isDynamic = false
+        addChild(pivot)
+        return pivot
+    }
+
+    private func sceneAnchor(for localPos: CGPoint) -> CGPoint {
+        return self.convert(localPos, from: self)
+    }
+    
     func addLeftFlipper() {
         let rest: CGFloat = -.pi/3
-        let pressed: CGFloat =  .pi/3
-        let travel = pressed - rest
         
         flipLeft = SKSpriteNode(imageNamed: "LeftFlipper")
         flipLeft.size = CGSize(width: 180, height: 180)
         flipLeft.anchorPoint = CGPoint(x: 0.18, y: 0.20)
-        flipLeft.position = CGPoint(x: 66, y: 90)
+        flipLeft.position = CGPoint(x: 66, y: 110)
         flipLeft.name = "flipLeft"
         
         flipLeft.zRotation = rest
         flipLeft.physicsBody = makeFlipperBody(isLeft: true, size: flipLeft.size)
         addChild(flipLeft)
         
-        let pivot = SKNode()
-        pivot.name = "flipLeftPivot"
-        pivot.position = flipLeft.position
-        pivot.physicsBody = SKPhysicsBody(circleOfRadius: 1)
-        pivot.physicsBody?.isDynamic = false
-        addChild(pivot)
-        
-        let pin = SKPhysicsJointPin.joint(withBodyA: pivot.physicsBody!, bodyB: flipLeft.physicsBody!, anchor: pivot.position)
-        pin.shouldEnableLimits = true
-        pin.lowerAngleLimit = 0
-        pin.upperAngleLimit = travel
-        physicsWorld.add(pin)
+        let leftLocalPos = flipLeft.position
+        leftPivot = makePivot(at: leftLocalPos)
+        let leftAnchor = sceneAnchor(for: leftLocalPos)
+
+        let leftPin = SKPhysicsJointPin.joint(withBodyA: leftPivot!.physicsBody!,
+                                              bodyB: flipLeft.physicsBody!,
+                                              anchor: leftAnchor)
+        leftPin.shouldEnableLimits = true
+        leftPin.lowerAngleLimit = 0
+        leftPin.upperAngleLimit = (.pi/3 - (-.pi/3))
+        leftPin.frictionTorque = 1.0
+        physicsWorld.add(leftPin)
+        self.leftPin = leftPin
         
         let tapProxy = SKSpriteNode(texture: flipLeft!.texture)
         tapProxy.name = "flipLeftTap"
@@ -1017,46 +1065,53 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if leftPressed {
-            guard let b = flipLeft.physicsBody else { return }
-            b.applyAngularImpulse(-100)
-            leftPressed = false
+        for t in touches {
+            if t == leftOwner {
+                leftOwner = nil
+                leftTouchDown = false
+                flipLeft.physicsBody?.angularVelocity = min(flipLeft.physicsBody?.angularVelocity ?? 0, 0)
+                flipLeft.physicsBody?.applyAngularImpulse(-220)   // left goes back negative
+            }
+            if t == rightOwner {
+                rightOwner = nil
+                rightTouchDown = false
+                flipRight.physicsBody?.angularVelocity = max(flipRight.physicsBody?.angularVelocity ?? 0, 0)
+                flipRight.physicsBody?.applyAngularImpulse(220)   // right goes back positive
+            }
         }
-        if rightPressed {
-            guard let b = flipRight.physicsBody else { return }
-            b.applyAngularImpulse(100)
-            rightPressed = false
-        }
+    }
+    
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        touchesEnded(touches, with: event)
     }
 
     func addRightFlipper() {
         let rest: CGFloat = .pi/3
-        let pressed: CGFloat = -.pi/3
-        let travel = pressed - rest
         
         flipRight = SKSpriteNode(imageNamed: "RightFlipper")
         flipRight.size = CGSize(width: 180, height: 180)
         flipRight.anchorPoint = CGPoint(x: 0.82, y: 0.20)
-        flipRight.position = CGPoint(x: 324, y: 90)
+        flipRight.position = CGPoint(x: 324, y: 110)
         flipRight.name = "flipRight"
         
+
         flipRight.zRotation = rest
         flipRight.physicsBody = makeFlipperBody(isLeft: false, size: flipRight.size)
         addChild(flipRight)
         
-        let hingeScene = convert(flipRight.position, from: self)
-        let pivot = SKNode()
-        pivot.name = "flipRightPivot"
-        pivot.position = hingeScene
-        pivot.physicsBody = SKPhysicsBody(circleOfRadius: 1)
-        pivot.physicsBody?.isDynamic = false
-        addChild(pivot)
-        
-        let pin = SKPhysicsJointPin.joint(withBodyA: pivot.physicsBody!, bodyB: flipRight.physicsBody!, anchor: hingeScene)
-        pin.shouldEnableLimits = true
-        pin.lowerAngleLimit = travel
-        pin.upperAngleLimit = 0
-        physicsWorld.add(pin)
+        let rightLocalPos = flipRight.position
+        rightPivot = makePivot(at: rightLocalPos)
+        let rightAnchor = sceneAnchor(for: rightLocalPos)
+
+        let rightPin = SKPhysicsJointPin.joint(withBodyA: rightPivot!.physicsBody!,
+                                               bodyB: flipRight.physicsBody!,
+                                               anchor: rightAnchor)
+        rightPin.shouldEnableLimits = true
+        rightPin.lowerAngleLimit = (-.pi/3 - .pi/3)
+        rightPin.upperAngleLimit = 0
+        rightPin.frictionTorque = 1.0
+        physicsWorld.add(rightPin)
+        self.rightPin = rightPin
         
         let tapProxy = SKSpriteNode(texture: flipRight!.texture)
         tapProxy.name = "flipRightTap"

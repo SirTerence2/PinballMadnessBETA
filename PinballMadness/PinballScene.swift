@@ -46,13 +46,22 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     var ballSkin: String = "Pinball"
     
     var flipLeft: SKSpriteNode!
-    var leftPressed = false
     var flipRight: SKSpriteNode!
-    var rightPressed = false
     var leftPin: SKPhysicsJointPin?
     var rightPin: SKPhysicsJointPin?
     var leftPivot: SKNode?
     var rightPivot: SKNode?
+    
+    private var leftTouchDown = false
+    private var rightTouchDown = false
+
+    private let leftRest: CGFloat = -.pi/3
+    private let leftPressedAngle: CGFloat =  .pi/3
+    private let rightRest: CGFloat =  .pi/3
+    private let rightPressedAngle: CGFloat = -.pi/3
+    
+    private var leftOwner: UITouch?
+    private var rightOwner: UITouch?
     
     var fistLeft: SKSpriteNode!
     var fistRight: SKSpriteNode!
@@ -114,6 +123,8 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             }
             return
         }
+        
+        view.isMultipleTouchEnabled = true
         isSceneSetup = true
         pinballWorldNode.name = "headNode"
         
@@ -266,17 +277,16 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             physicsWorld.enumerateBodies(at: p) { body, stop in
                 guard let node = body.node else { return }
                 switch node.name {
-                case "flipLeft", "flipLeftTap":
-                    self.leftPressed = true
-                    self.applyLeftFlipperImpulse()
-                    handled = true
-                    stop.pointee = true
-                    
-                case "flipRight", "flipRightTap":
-                    self.rightPressed = true
-                    self.applyRightFlipperImpulse()
-                    handled = true
-                    stop.pointee = true
+                case "flipLeft", "flipLeftTap" where self.leftOwner == nil:
+                    self.leftOwner = touch
+                    self.leftTouchDown = true
+                    self.flipLeft.physicsBody?.angularVelocity = 0
+                    self.flipLeft.physicsBody?.applyAngularImpulse(420)
+                case "flipRight", "flipRightTap" where self.rightOwner == nil:
+                    self.rightOwner = touch
+                    self.rightTouchDown = true
+                    self.flipRight.physicsBody?.angularVelocity = 0
+                    self.flipRight.physicsBody?.applyAngularImpulse(-420)
                     
                 case "Pinball":
                     if self.jumpBoostAvailable {
@@ -310,11 +320,11 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                         }
                         sprite.run(SKAction.sequence([.wait(forDuration: 0.15)]), withKey: "fistBusy")
                         let positionMem = sprite.position
-
+                        
                         sprite.texture = SKTexture(imageNamed: "PistonCompressed")
-                        sprite.position = CGPoint(x: 390, y: 20)
+                        sprite.position = CGPoint(x: 0, y: 20)
                         self.addFistProjectile(isRight: false)
-
+                        
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             sprite.texture = SKTexture(imageNamed: "PistonUncompressed")
                             sprite.position = positionMem
@@ -333,12 +343,12 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                         }
                         sprite.run(SKAction.sequence([.wait(forDuration: 0.15)]), withKey: "fistBusy")
                         let positionMem = sprite.position
-
+                        
                         sprite.texture = SKTexture(imageNamed: "PistonCompressed")
                         sprite.xScale = -1
                         sprite.position = CGPoint(x: 390, y: 20)
                         self.addFistProjectile(isRight: true)
-
+                        
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             sprite.texture = SKTexture(imageNamed: "PistonUncompressed")
                             sprite.xScale = -1
@@ -349,7 +359,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                         handled = true
                         stop.pointee = true
                     }
-                
+                    
                 case "rotaUndoButton":
                     if let sprite = node as? SKSpriteNode {
                         self.ball.position = self.ballPastPosition
@@ -373,8 +383,18 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         }
     }
     
+    private func hitName(at p: CGPoint) -> String? {
+        var found: String?
+        physicsWorld.enumerateBodies(at: p) { body, stop in
+            if let n = body.node?.name { found = n; stop.pointee = true }
+        }
+        return found
+    }
+    
     override func update(_ currentTime: TimeInterval) {
         super.update(currentTime)
+        driveFlipper(flipLeft,  pressed: leftTouchDown,  pressedTarget: leftPressedAngle,  restTarget: leftRest)
+        driveFlipper(flipRight, pressed: rightTouchDown, pressedTarget: rightPressedAngle, restTarget: rightRest)
         
         positionHistory.append((time: currentTime, pos: ball.position, vel: ball.physicsBody?.velocity))
         self.currentTime = currentTime
@@ -543,6 +563,27 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             bodyBallDup.velocity = CGVector(dx: bodyBallDup.velocity.dx * scale, dy: bodyBallDup.velocity.dy * scale)
         }
         
+    }
+    
+    private func shortestAngle(_ a: CGFloat, _ b: CGFloat) -> CGFloat {
+        var d = (b - a).truncatingRemainder(dividingBy: 2*CGFloat.pi)
+        if d >= .pi { d -= 2*CGFloat.pi }
+        if d < -.pi { d += 2*CGFloat.pi }
+        return d
+    }
+
+    private func driveFlipper(_ node: SKSpriteNode?, pressed: Bool, pressedTarget: CGFloat, restTarget: CGFloat) {
+        guard let body = node?.physicsBody, let node = node else { return }
+        let target = pressed ? pressedTarget : restTarget
+
+        // 🔧 Stronger gains & torque when returning to rest
+        let Kp: CGFloat   = pressed ? 180 : 280
+        let Kd: CGFloat   = pressed ? 20  : 35
+        let maxT: CGFloat = pressed ? 900 : 1600
+
+        let err = shortestAngle(node.zRotation, target)
+        let torque = max(-maxT, min(maxT, Kp * err - Kd * body.angularVelocity))
+        body.applyTorque(torque)
     }
     
     private func endRotaPhase(didCompleteAllChecks: Bool) {
@@ -944,17 +985,29 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         body.usesPreciseCollisionDetection = true
         body.friction = 0.2
         body.restitution = 0.0
-        body.density = 100.0
+        body.angularDamping = 0.05
+        body.density = 150
         body.categoryBitMask = PhysicsCategory.flipper
         body.collisionBitMask = PhysicsCategory.ball | PhysicsCategory.ballDup
         body.contactTestBitMask = PhysicsCategory.none
         return body
     }
     
+    private func makePivot(at localPos: CGPoint) -> SKNode {
+        let pivot = SKNode()
+        pivot.position = localPos
+        pivot.physicsBody = SKPhysicsBody(circleOfRadius: 1)
+        pivot.physicsBody?.isDynamic = false
+        pinballWorldNode.addChild(pivot)
+        return pivot
+    }
+
+    private func sceneAnchor(for localPos: CGPoint) -> CGPoint {
+        return self.convert(localPos, from: pinballWorldNode)
+    }
+    
     func addLeftFlipper() {
         let rest: CGFloat = -.pi/3
-        let pressed: CGFloat =  .pi/3
-        let travel = pressed - rest
         
         flipLeft = SKSpriteNode(imageNamed: "LeftFlipper")
         flipLeft.size = CGSize(width: 180, height: 180)
@@ -966,20 +1019,19 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         flipLeft.physicsBody = makeFlipperBody(isLeft: true, size: flipLeft.size)
         pinballWorldNode.addChild(flipLeft)
         
-        let pivot = SKNode()
-        pivot.name = "flipLeftPivot"
-        pivot.position = flipLeft.position
-        pivot.physicsBody = SKPhysicsBody(circleOfRadius: 1)
-        pivot.physicsBody?.isDynamic = false
-        addChild(pivot)
-        leftPivot = pivot
-        
-        let pin = SKPhysicsJointPin.joint(withBodyA: pivot.physicsBody!, bodyB: flipLeft.physicsBody!, anchor: pivot.position)
-        pin.shouldEnableLimits = true
-        pin.lowerAngleLimit = 0
-        pin.upperAngleLimit = travel
-        physicsWorld.add(pin)
-        leftPin = pin
+        let leftLocalPos = flipLeft.position
+        leftPivot = makePivot(at: leftLocalPos)
+        let leftAnchor = sceneAnchor(for: leftLocalPos)
+
+        let leftPin = SKPhysicsJointPin.joint(withBodyA: leftPivot!.physicsBody!,
+                                              bodyB: flipLeft.physicsBody!,
+                                              anchor: leftAnchor)
+        leftPin.shouldEnableLimits = true
+        leftPin.lowerAngleLimit = 0
+        leftPin.upperAngleLimit = (.pi/3 - (-.pi/3))
+        leftPin.frictionTorque = 1.0
+        physicsWorld.add(leftPin)
+        self.leftPin = leftPin
         
         let tapProxy = SKSpriteNode(texture: flipLeft!.texture)
         tapProxy.name = "flipLeftTap"
@@ -1006,23 +1058,28 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if leftPressed {
-            guard let b = flipLeft.physicsBody else { return }
-            b.applyAngularImpulse(-130)
-            leftPressed = false
+        for t in touches {
+            if t == leftOwner {
+                leftOwner = nil
+                leftTouchDown = false
+                flipLeft.physicsBody?.angularVelocity = min(flipLeft.physicsBody?.angularVelocity ?? 0, 0)
+                flipLeft.physicsBody?.applyAngularImpulse(-220)   // left goes back negative
+            }
+            if t == rightOwner {
+                rightOwner = nil
+                rightTouchDown = false
+                flipRight.physicsBody?.angularVelocity = max(flipRight.physicsBody?.angularVelocity ?? 0, 0)
+                flipRight.physicsBody?.applyAngularImpulse(220)   // right goes back positive
+            }
         }
-        if rightPressed {
-            guard let b = flipRight.physicsBody else { return }
-            b.applyAngularImpulse(130)
-            rightPressed = false
-        }
-
+    }
+    
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        touchesEnded(touches, with: event)
     }
     
     func addRightFlipper() {
         let rest: CGFloat = .pi/3
-        let pressed: CGFloat = -.pi/3
-        let travel = pressed - rest
         
         flipRight = SKSpriteNode(imageNamed: "RightFlipper")
         flipRight.size = CGSize(width: 180, height: 180)
@@ -1035,21 +1092,19 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         flipRight.physicsBody = makeFlipperBody(isLeft: false, size: flipRight.size)
         pinballWorldNode.addChild(flipRight)
         
-        let hingeScene = convert(flipRight.position, from: pinballWorldNode)
-        let pivot = SKNode()
-        pivot.name = "flipRightPivot"
-        pivot.position = hingeScene
-        pivot.physicsBody = SKPhysicsBody(circleOfRadius: 1)
-        pivot.physicsBody?.isDynamic = false
-        pinballWorldNode.addChild(pivot)
-        rightPivot = pivot
-        
-        let pin = SKPhysicsJointPin.joint(withBodyA: pivot.physicsBody!, bodyB: flipRight.physicsBody!, anchor: hingeScene)
-        pin.shouldEnableLimits = true
-        pin.lowerAngleLimit = travel
-        pin.upperAngleLimit = 0
-        physicsWorld.add(pin)
-        rightPin = pin
+        let rightLocalPos = flipRight.position
+        rightPivot = makePivot(at: rightLocalPos)
+        let rightAnchor = sceneAnchor(for: rightLocalPos)
+
+        let rightPin = SKPhysicsJointPin.joint(withBodyA: rightPivot!.physicsBody!,
+                                               bodyB: flipRight.physicsBody!,
+                                               anchor: rightAnchor)
+        rightPin.shouldEnableLimits = true
+        rightPin.lowerAngleLimit = (-.pi/3 - .pi/3)
+        rightPin.upperAngleLimit = 0
+        rightPin.frictionTorque = 1.0
+        physicsWorld.add(rightPin)
+        self.rightPin = rightPin
         
         let tapProxy = SKSpriteNode(texture: flipRight!.texture)
         tapProxy.name = "flipRightTap"

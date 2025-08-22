@@ -592,12 +592,10 @@ struct ContentView: View {
             scene.flipLeft.physicsBody?.velocity = .zero
             scene.flipLeft.physicsBody?.isResting = true
             scene.flipLeft.zRotation = -.pi/3
-            scene.leftPressed = false
             scene.flipRight.physicsBody?.angularVelocity = 0
             scene.flipRight.physicsBody?.velocity = .zero
             scene.flipRight.physicsBody?.isResting = true
             scene.flipRight.zRotation = .pi/3
-            scene.rightPressed = false
             scene.positionHistory = positionHistory
             screenDirection = "pinball"
             scene.ballSkin = ballDesign
