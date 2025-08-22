@@ -93,15 +93,26 @@ struct ContentView: View {
             .resizable()
             .frame(width: 65, height: 65)
         
-        let background = Image("BossStage")
+        let background = Image("BckgroundImageGeneral")
+            .resizable()
+        
+        let backgroundPinball = Image("Background_metal")
             .resizable()
             .scaledToFill()
         
         GeometryReader { geo in
             ZStack{
-                background
-                    .frame(width: geo.size.width, height: geo.size.height)
-                    .ignoresSafeArea()
+                if screenDirection != "pinball" && screenDirection != "boss" {
+                    background
+                        .frame(width: geo.size.width, height: geo.size.height * 2.25/2)
+                        .ignoresSafeArea()
+                        .scaledToFit()
+                }
+                else {
+                    backgroundPinball
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .ignoresSafeArea()
+                }
 
                 // Compute a uniform scale to preserve aspect ratio
                 let scale = min(
@@ -427,9 +438,7 @@ struct ContentView: View {
     @ViewBuilder
     func pinballScreenView(geometry: GeometryProxy, scene: PinballScene, settings: some View, background: some View, exit: some View, settingsButton: some View) -> some View {
         ZStack {
-            SpriteView(scene: scene,
-                       options: [],
-                        debugOptions: [.showsPhysics, .showsNodeCount, .showsFPS])
+            SpriteView(scene: scene)
                 .id(pinballSceneID)
                 .ignoresSafeArea()
                 .onReceive(scene.dupPublisher) { value in

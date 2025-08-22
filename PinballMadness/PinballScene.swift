@@ -658,7 +658,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 self.dupBallActive = true
                 self.dupPublisher.send(true)
                 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 40.0){
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0){
                     for node in self.pinballWorldNode.children {
                         if node.name == "PinballDup" {
                             self.timerValue += 60
@@ -1486,9 +1486,9 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     }
     
     func addItemRotaChecks(){
-        rotaItemCheck = SKSpriteNode(imageNamed: "Rota_Item")
+        rotaItemCheck = SKSpriteNode(imageNamed: "RotaButtonCheck")
         rotaItemCheck.name = "rotaItemCheck"
-        rotaItemCheck.size = CGSize(width: 100, height: 100)
+        rotaItemCheck.size = CGSize(width: 150, height: 150)
         var achievedMinDistanceFromEachOther: Bool = true
         var position: CGPoint
         var attempts = 0
@@ -1508,7 +1508,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             }
         } while (position.distance(to: self.ball.position) < 200 || !achievedMinDistanceFromEachOther) && attempts < 40
         rotaItemCheck.position = position
-        rotaItemCheck.physicsBody = SKPhysicsBody(rectangleOf: rotaItemCheck.size)
+        rotaItemCheck.physicsBody = SKPhysicsBody(circleOfRadius: 25)
         rotaItemCheck.physicsBody!.isDynamic = false
         rotaItemCheck.physicsBody?.affectedByGravity = false
         
@@ -1522,7 +1522,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     func addUndoButton(){
         rotaUndoButton = SKSpriteNode(imageNamed: "RotaButton")
         rotaUndoButton.name = "rotaUndoButton"
-        rotaUndoButton.size = CGSize(width: 150, height: 150)
+        rotaUndoButton.size = CGSize(width: 120, height: 120)
         rotaUndoButton.position = CGPoint(x: 80, y: 890)
         let body = SKPhysicsBody(rectangleOf: rotaUndoButton.size)
         rotaUndoButton.physicsBody = body
@@ -1535,7 +1535,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     
     func addBossItem(){
         print("added boss")
-        let delay = 10 * Double.random(in: 1...3)
+        let delay = 1 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),
