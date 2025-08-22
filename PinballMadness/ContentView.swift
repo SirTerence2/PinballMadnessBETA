@@ -28,6 +28,21 @@ func makeAchievementsScene() -> AchievementScene {
     scene.scaleMode = .resizeFill
     return scene
 }
+
+private enum DefaultsKey {
+    static let selectedSkin = "selectedSkin"
+    static let achievementsCount = "achievementsCount"
+    static let achievementsCSV = "achievementsCSV"
+}
+
+enum Achievement: String, CaseIterable {
+    case allPowersActivated
+    case fiveBossWins
+    case survive3min
+    case survive6min
+    case noDamage
+}
+
 struct ContentView: View {
     private var isPad: Bool {UIDevice.current.userInterfaceIdiom == .pad }
     private let baseSize = CGSize(width: 390, height: 844)
@@ -45,8 +60,7 @@ struct ContentView: View {
     @State private var isSetting: Bool = false;
     @State private var playerLost: Bool = false;
     
-    @State private var ballDesign: String = "Pinball"
-    @State private var currentBallSkinIndex: Int = 0
+    @AppStorage(DefaultsKey.selectedSkin) private var ballDesign: String = "Pinball"
     
     let timer = Timer.publish(every: 0.75, on: .main, in: .common).autoconnect()
     
@@ -62,7 +76,7 @@ struct ContentView: View {
     @State internal var thirdAchievementAchieved: Bool = false
     @State internal var fourthAchievementAchieved: Bool = false
     @State internal var fifthAchievementAchieved: Bool = false
-    @State private var numberOfAchievementsAchieved: Int = 0
+    var numberOfAchievementsAchieved: Int { unlocked.count }
     
     @State private var playTime: TimeInterval = 0
     @State private var minutes: Int = 0
@@ -73,7 +87,32 @@ struct ContentView: View {
     
     @State private var positionHistory: [(time: TimeInterval, pos: CGPoint, vel: CGVector?)] = []
     
+    @AppStorage(DefaultsKey.achievementsCSV) private var achievementsCSV: String = ""
+    
+    var unlocked: Set<Achievement> {
+        get {
+            let parts = achievementsCSV.split(separator: ",").map { String($0) }
+            return Set(parts.compactMap(Achievement.init(rawValue:)))
+        }
+        set {
+            achievementsCSV = newValue.map(\.rawValue).joined(separator: ",")
+        }
+    }
+    
+    func isUnlocked(_ a: Achievement) -> Bool { unlocked.contains(a) }
+
+    var achievementsCount: Int { unlocked.count }
+    
+    func csvByAdding(_ a: Achievement, to csv: String) -> String {
+        var set = Set(
+            csv.split(separator: ",").compactMap { Achievement(rawValue: String($0)) }
+        )
+        let inserted = set.insert(a).inserted
+        return inserted ? set.map(\.rawValue).joined(separator: ",") : csv
+    }
+    
     var body: some View {
+        
         let star = Image("Star")
             .resizable()
             .frame(width: 100, height: 100)
@@ -302,16 +341,18 @@ struct ContentView: View {
                                 minutes = Int(playTime) / 60
                                 seconds = Int(playTime) % 60
                                 if !thirdAchievementAchieved {
+                                    //180
                                     thirdAchievementAchieved = playTime >= 180
                                     if thirdAchievementAchieved {
-                                        numberOfAchievementsAchieved += 1
+                                        achievementsCSV = csvByAdding(.survive3min, to: achievementsCSV)
                                     }
                                 }
                                 print(playTime)
                                 if !fourthAchievementAchieved {
+                                    //360
                                     fourthAchievementAchieved = playTime >= 360
                                     if fourthAchievementAchieved {
-                                        numberOfAchievementsAchieved += 1
+                                        achievementsCSV = csvByAdding(.survive6min, to: achievementsCSV)
                                     }
                                 }
                                 playTimerLabel = String(format: "%02d:%02d", minutes, seconds)
@@ -357,19 +398,41 @@ struct ContentView: View {
             SpriteView(scene: scene)
                 .id(startupSceneID)
                 .ignoresSafeArea()
-            if firstAchievementAchieved {
+                .onAppear() {
+                    if unlocked.contains(.allPowersActivated) {
+                        firstAchievementAchieved = true
+                    }
+                    if unlocked.contains(.fiveBossWins) {
+                        secondAchievementAchieved = true
+                    }
+                    if unlocked.contains(.survive3min) {
+                        thirdAchievementAchieved = true
+                    }
+                    if unlocked.contains(.survive6min) {
+                        fourthAchievementAchieved = true
+                    }
+                    if unlocked.contains(.noDamage) {
+                        fifthAchievementAchieved = true
+                    }
+                }
+            if unlocked.contains(.allPowersActivated) {
+                //firstAchievementAchieved = true
                 star.position(x: 100, y: isPad ? 260 : 235)
             }
-            if secondAchievementAchieved {
+            if unlocked.contains(.fiveBossWins) {
+                //secondAchievementAchieved = true
                 star.position(x: 280, y: isPad ? 260 : 235)
             }
-            if thirdAchievementAchieved {
+            if unlocked.contains(.survive3min) {
+                //thirdAchievementAchieved = true
                 star.position(x: 325, y: isPad ? 360 : 345)
             }
-            if fourthAchievementAchieved {
+            if unlocked.contains(.survive6min) {
+                //fourthAchievementAchieved = true
                 star.position(x:195, y: isPad ? 360 : 345)
             }
-            if fifthAchievementAchieved {
+            if unlocked.contains(.noDamage) {
+                //fifthAchievementAchieved = true
                 star.position(x: 61, y: isPad ? 360 : 345)
             }
             Button {
@@ -459,7 +522,7 @@ struct ContentView: View {
                 .onReceive(scene.powerUpPublisher) {
                     if !firstAchievementAchieved {
                         firstAchievementAchieved = true
-                        numberOfAchievementsAchieved += 1
+                        achievementsCSV = csvByAdding(.allPowersActivated, to: achievementsCSV)
                     }
                 }
             Button {
@@ -497,7 +560,7 @@ struct ContentView: View {
                     if !secondAchievementAchieved{
                         secondAchievementAchieved = bossFightCount >= 5
                         if secondAchievementAchieved {
-                            numberOfAchievementsAchieved += 1
+                            achievementsCSV = csvByAdding(.fiveBossWins, to: achievementsCSV)
                         }
                     }
                     isDupBallThere = scene.dupBallThere
@@ -512,7 +575,7 @@ struct ContentView: View {
                 .onReceive(scene.neverRecievedDamagePublisher) {
                     if !fifthAchievementAchieved {
                         fifthAchievementAchieved = true
-                        numberOfAchievementsAchieved += 1
+                        achievementsCSV = csvByAdding(.noDamage, to: achievementsCSV)
                     }
                 }
             Button {
