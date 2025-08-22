@@ -699,7 +699,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 self.dupBallActive = true
                 self.dupPublisher.send(true)
                 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0){
+                DispatchQueue.main.asyncAfter(deadline: .now() + 30.0){
                     for node in self.pinballWorldNode.children {
                         if node.name == "PinballDup" {
                             self.timerValue += 60
