@@ -53,7 +53,7 @@ struct ContentView: View {
     @State private var bossSceneID = UUID()
     @State private var achievementSceneID = UUID()
     @State private var skinsSceneID = UUID()
-
+    
     @State private var isDupBallThere = false
     
     @State private var screenDirection: String = "startup"
@@ -89,6 +89,8 @@ struct ContentView: View {
     
     @AppStorage(DefaultsKey.achievementsCSV) private var achievementsCSV: String = ""
     
+    @Environment(\.scenePhase) private var scenePhase
+    
     var unlocked: Set<Achievement> {
         get {
             let parts = achievementsCSV.split(separator: ",").map { String($0) }
@@ -100,7 +102,7 @@ struct ContentView: View {
     }
     
     func isUnlocked(_ a: Achievement) -> Bool { unlocked.contains(a) }
-
+    
     var achievementsCount: Int { unlocked.count }
     
     func csvByAdding(_ a: Achievement, to csv: String) -> String {
@@ -109,6 +111,19 @@ struct ContentView: View {
         )
         let inserted = set.insert(a).inserted
         return inserted ? set.map(\.rawValue).joined(separator: ",") : csv
+    }
+    
+    private func applyPauseStateForCurrentScreen() {
+        switch screenDirection {
+        case "pinball":
+            pinballScene?.isPaused = isSetting || playerLost
+        case "boss":
+            bossScene?.isPaused = isSetting
+        case "startup":
+            startupScene?.isPaused = isSetting
+        default:
+            break
+        }
     }
     
     var body: some View {
@@ -152,7 +167,7 @@ struct ContentView: View {
                         .frame(width: geo.size.width, height: geo.size.height)
                         .ignoresSafeArea()
                 }
-
+                
                 // Compute a uniform scale to preserve aspect ratio
                 let scale = min(
                     geo.size.width  / baseSize.width,
@@ -323,6 +338,25 @@ struct ContentView: View {
                 .scaleEffect(scale)
                 .position(x: geo.size.width / 2, y: geo.size.height / 2)
             }
+        }
+        .onAppear { applyPauseStateForCurrentScreen() }
+        .onChange(of: scenePhase) { phase in
+            switch phase {
+            case .active:
+                applyPauseStateForCurrentScreen()   // re-assert pause after returning
+            case .inactive, .background:
+                // pause everything when leaving
+                pinballScene?.isPaused = true
+                bossScene?.isPaused = true
+                startupScene?.isPaused = true
+            @unknown default: break
+            }
+        }
+        .onChange(of: isSetting) { _ in
+            applyPauseStateForCurrentScreen()
+        }
+        .onChange(of: screenDirection) { _ in
+            applyPauseStateForCurrentScreen()
         }
     }
     
