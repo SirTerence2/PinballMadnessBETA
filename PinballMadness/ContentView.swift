@@ -421,6 +421,7 @@ struct ContentView: View {
                             .frame(width: 390, height: 1000)
                             .offset(y: -60)
                             .onAppear {
+                                sfx.play("LoseSound.mp3")
                                 playTime += pinballScene!.timeSurvivedValue
                                 minutes = Int(playTime) / 60
                                 seconds = Int(playTime) % 60
@@ -647,6 +648,9 @@ struct ContentView: View {
             SpriteView(scene: scene)
                 .id(bossSceneID)
                 .ignoresSafeArea()
+                .onAppear(){
+                    sfx.play("TeleportationFromPinballToBoss.wav")
+                }
                 .onReceive(scene.victoryPublisher){
                     bossFightCount += 1
                     if !secondAchievementAchieved{

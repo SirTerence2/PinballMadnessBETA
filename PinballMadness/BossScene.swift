@@ -107,7 +107,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     private func preWindCompress(
         on node: SKSpriteNode,
         overshoot: CGFloat = 0.78,
-        duration: TimeInterval = 0.7,
+        duration: TimeInterval = 2.5,
         key: String = "bossCompress",
         completion: @escaping () -> Void
     ) {
@@ -255,7 +255,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
             } else {
                 self.performLaserAttack()
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
                 for node in self.children {
                     if node.name == "pushAttack" || node.name == "laserAttack" {
                         node.removeFromParent()
@@ -613,6 +613,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.loseBox {
             if dupBallThere {
+                self.run(SKAction.playSoundFileNamed("BallRevival.wav", waitForCompletion: false))
                 for node in self.children {
                     if node.name == "Pinball"{
                         node.removeFromParent()
@@ -624,7 +625,6 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
                         node.removeFromParent()
                     }
                 }
-                self.run(SKAction.playSoundFileNamed("BallRevival.wav", waitForCompletion: false))
                 dupBallThere = false
             } else {
                 self.run(SKAction.playSoundFileNamed("LoseSound.mp3", waitForCompletion: true))
@@ -846,7 +846,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         }
 
         let normalized = CGVector(dx: direction.dx / length, dy: direction.dy / length)
-        let force = CGVector(dx: normalized.dx * -500, dy: normalized.dy * -500)
+        let force = CGVector(dx: normalized.dx * -700, dy: normalized.dy * -700)
         let angle = atan2(force.dy, force.dx)
         bossPushAttack.zRotation = angle
         
