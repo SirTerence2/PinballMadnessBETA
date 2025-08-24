@@ -6,6 +6,7 @@
 //
 import SpriteKit
 import Combine
+import AVFAudio
 
 extension CGPoint {
     func distance(to point: CGPoint) -> CGFloat {
@@ -169,6 +170,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         
         //countdown to start
         let tickAction = SKAction.run {
+            self.run(.playSoundFileNamed("ClockTickSound.wav", waitForCompletion: false))
             self.countDownToStart -= 1
         }
         
@@ -279,11 +281,13 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 guard let node = body.node else { return }
                 switch node.name {
                 case "flipLeft", "flipLeftTap" where self.leftOwner == nil && self.flippersEnabled:
+                    self.run(.playSoundFileNamed("FlipperSoundEffect.wav", waitForCompletion: false))
                     self.leftOwner = touch
                     self.leftTouchDown = true
                     self.flipLeft.physicsBody?.angularVelocity = 0
                     self.flipLeft.physicsBody?.applyAngularImpulse(420)
                 case "flipRight", "flipRightTap" where self.rightOwner == nil && self.flippersEnabled:
+                    self.run(.playSoundFileNamed("FlipperSoundEffect.wav", waitForCompletion: false))
                     self.rightOwner = touch
                     self.rightTouchDown = true
                     self.flipRight.physicsBody?.angularVelocity = 0
@@ -291,6 +295,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     
                 case "Pinball":
                     if self.jumpBoostAvailable {
+                        self.run(.playSoundFileNamed("BallJump.wav", waitForCompletion: false))
                         self.jumpBoostAvailable = false
                         let ballX = self.ball.position.x
                         let ballDistanceLeft = ballX
@@ -303,6 +308,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                     
                 case "PinballDup":
                     if self.jumpBoostAvailable {
+                        self.run(.playSoundFileNamed("BallJump.wav", waitForCompletion: false))
                         self.jumpBoostAvailable = false
                         let x = node.position.x
                         let left = x
@@ -323,6 +329,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                         let positionMem = sprite.position
                         
                         sprite.texture = SKTexture(imageNamed: "PistonCompressed")
+                        //self.run(SKAction.playSoundFileNamed("PunCharge.wav", waitForCompletion: false))
                         sprite.position = CGPoint(x: 0, y: 20)
                         self.addFistProjectile(isRight: false)
                         
@@ -330,6 +337,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                             sprite.texture = SKTexture(imageNamed: "PistonUncompressed")
                             sprite.position = positionMem
                             sprite.physicsBody?.applyForce(CGVector(dx: 350, dy: 350))
+                            self.run(SKAction.playSoundFileNamed("PunReleased.wav", waitForCompletion: false))
                         }
                         
                         handled = true
@@ -346,6 +354,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                         let positionMem = sprite.position
                         
                         sprite.texture = SKTexture(imageNamed: "PistonCompressed")
+                        //self.run(SKAction.playSoundFileNamed("PunCharge.wav", waitForCompletion: false))
                         sprite.xScale = -1
                         sprite.position = CGPoint(x: 390, y: 20)
                         self.addFistProjectile(isRight: true)
@@ -355,6 +364,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                             sprite.xScale = -1
                             sprite.position = positionMem
                             sprite.physicsBody?.applyForce(CGVector(dx: -350, dy: 350))
+                            self.run(SKAction.playSoundFileNamed("PunReleased.wav", waitForCompletion: false))
                         }
                         
                         handled = true
@@ -364,6 +374,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 case "rotaUndoButton":
                     if let sprite = node as? SKSpriteNode {
                         self.ball.position = self.ballPastPosition
+                        self.run(SKAction.playSoundFileNamed("ButtonPressed.wav", waitForCompletion: false))
                         handled = true
                         stop.pointee = true
                         sprite.removeFromParent()
@@ -681,10 +692,13 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             
             switch bumper.name {
             case "bumperRight":
+                self.run(.playSoundFileNamed("BumperSoundEffect.mp3", waitForCompletion: false))
                 impulse = CGVector(dx: -80, dy: 0)
             case "bumperLeft":
+                self.run(.playSoundFileNamed("BumperSoundEffect.mp3", waitForCompletion: false))
                 impulse = CGVector(dx: 80, dy: 0)
             case "bumperCenter":
+                self.run(.playSoundFileNamed("BumperSoundEffect.mp3", waitForCompletion: false))
                 if let ballPhysicsBody = ball.physicsBody {
                     let currentVelocity = ballPhysicsBody.velocity
                     let oppositeImpulse = CGVector(dx: -currentVelocity.dx, dy: -currentVelocity.dy)
@@ -726,6 +740,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         }
         
         if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.itemDupli {
+            self.run(.playSoundFileNamed("ItemSmashed.mp3", waitForCompletion: false))
             activatedDupPower = true
             DispatchQueue.main.async {
                 otherNode.removeFromParent()
@@ -749,6 +764,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             }
         }
         else if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.itemPun {
+            self.run(.playSoundFileNamed("ItemSmashed.mp3", waitForCompletion: false))
             activatedPunPower = true
             hitFistItem = true
             DispatchQueue.main.async {
@@ -766,7 +782,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 let repeatTemp = SKAction.repeat(sequence, count: 20)
                 
                 self.run(repeatTemp, withKey: "timeLimitForPun")
-                
+                self.run(.playSoundFileNamed("TransitionSoundFromFlipperToPun.wav", waitForCompletion: false))
                 self.addFistsLeft()
                 self.addFistsRight()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 20.0){
@@ -789,6 +805,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             }
         }
         else if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.itemRota {
+            self.run(.playSoundFileNamed("ItemSmashed.mp3", waitForCompletion: false))
             DispatchQueue.main.async {
                 self.activatedRotaPower = true
                 self.timeLimitForRota = 35
@@ -810,6 +827,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 }
                 self.addTimeLimitForRota()
                 let tickAction = SKAction.run {
+                    self.run(.playSoundFileNamed("ClockTickSound.wav", waitForCompletion: false))
                     self.timeLimitForRota -= 1
                 }
                 
@@ -822,8 +840,10 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             }
         }
         else if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.itemBoss {
+            self.run(.playSoundFileNamed("ItemSmashed.mp3", waitForCompletion: false))
             activatedBossPower = true
             DispatchQueue.main.async {
+                self.run(.playSoundFileNamed("TeleportationFromPinballToBoss.wav", waitForCompletion: true))
                 self.bossPublisher.send()
                 otherNode.removeFromParent()
                 
@@ -832,6 +852,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             }
         }
         else if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.itemRotaCheck{
+            self.run(.playSoundFileNamed("ItemSmashed.mp3", waitForCompletion: false))
             DispatchQueue.main.async {
                 self.numberOfRotaChecksCollided += 1
                 otherNode.removeFromParent()
@@ -852,6 +873,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         
         if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.loseBox {
             if dupBallActive {
+                self.run(SKAction.playSoundFileNamed("BallRevival.wav", waitForCompletion: false))
                 for node in self.pinballWorldNode.children {
                     if node.name == "Pinball"{
                         node.removeFromParent()
@@ -867,6 +889,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 dupPublisher.send(false)
             }
             else {
+                self.run(SKAction.playSoundFileNamed("LoseSound.mp3", waitForCompletion: false))
                 losePublisher.send()
             }
         }

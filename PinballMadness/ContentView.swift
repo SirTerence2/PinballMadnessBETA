@@ -9,6 +9,7 @@ import SwiftUI
 import SpriteKit
 import UIKit
 import Combine
+import AVFAudio
 
 
 func makeStartupScene() -> StartupScene {
@@ -41,6 +42,46 @@ enum Achievement: String, CaseIterable {
     case survive3min
     case survive6min
     case noDamage
+}
+
+final class SFX: ObservableObject {
+    static let shared = SFX()
+    private var players: [String: AVAudioPlayer] = [:]
+
+    func play(_ filename: String, volume: Float = 1, loops: Int = 0) {
+        // split name/ext if provided
+        let ns = filename as NSString
+        let name = ns.deletingPathExtension
+        let ext  = ns.pathExtension.isEmpty ? "wav" : ns.pathExtension
+
+        let key = "\(name).\(ext)"
+        if players[key] == nil {
+            guard let url = Bundle.main.url(forResource: name, withExtension: ext) else {
+                print("⚠️ Missing audio: \(key)")
+                return
+            }
+            do {
+                let p = try AVAudioPlayer(contentsOf: url)
+                p.prepareToPlay()
+                players[key] = p
+            } catch {
+                print("⚠️ AVAudioPlayer error for \(key):", error)
+                return
+            }
+        }
+        guard let p = players[key] else { return }
+        p.currentTime = 0
+        p.volume = volume
+        p.numberOfLoops = loops
+        p.play()
+    }
+
+    func stop(_ filename: String) {
+        let ns = filename as NSString
+        let name = ns.deletingPathExtension
+        let ext  = ns.pathExtension.isEmpty ? "wav" : ns.pathExtension
+        players["\(name).\(ext)"]?.stop()
+    }
 }
 
 struct ContentView: View {
@@ -84,6 +125,7 @@ struct ContentView: View {
     @State private var playTimerLabel: String = "00:00"
     @State private var ballCancellable: AnyCancellable?
     @State private var bossFightCount: Int = 0
+    @StateObject private var sfx = SFX.shared
     
     @State private var positionHistory: [(time: TimeInterval, pos: CGPoint, vel: CGVector?)] = []
     
@@ -195,6 +237,7 @@ struct ContentView: View {
                                     settings
                                 }
                                 Button {
+                                    sfx.play("ButtonPressed.wav")
                                     isSetting = false
                                     pinballScene?.isPaused = false
                                 } label: {
@@ -217,6 +260,7 @@ struct ContentView: View {
                                             settings
                                         }
                                         Button {
+                                            sfx.play("ButtonPressed.wav")
                                             isSetting = false
                                             bossScene?.isPaused = false
                                         } label: {
@@ -235,11 +279,13 @@ struct ContentView: View {
                         }
                     }
                     else if screenDirection == "skins", let scene = skinsScene {
+                        //SettingChanged.wav
                         GeometryReader { geometry in
                             SpriteView(scene: scene)
                                 .id(achievementSceneID)
                                 .ignoresSafeArea()
                             Button {
+                                sfx.play("SettingChanged.wav")
                                 ballDesign = "Pinball"
                             } label: {
                                 skinBox
@@ -253,6 +299,7 @@ struct ContentView: View {
                             .position(x: 115, y: 245)
                             
                             Button {
+                                sfx.play("SettingChanged.wav")
                                 ballDesign = "PinballNuclear"
                             } label: {
                                 skinBox
@@ -267,6 +314,7 @@ struct ContentView: View {
                             
                             if numberOfAchievementsAchieved >= 3 {
                                 Button {
+                                    sfx.play("SettingChanged.wav")
                                     ballDesign = "PinballSharkSkin"
                                 } label: {
                                     skinBox
@@ -292,6 +340,7 @@ struct ContentView: View {
                             
                             if numberOfAchievementsAchieved >= 5 {
                                 Button {
+                                    sfx.play("SettingChanged.wav")
                                     ballDesign = "SpecialPinball"
                                 } label: {
                                     skinBox
@@ -326,6 +375,7 @@ struct ContentView: View {
                             .position(x: 190, y: 590)
                         }
                         Button {
+                            sfx.play("ButtonPressed.wav")
                             startupScene?.isPaused = false
                             screenDirection = "startup"
                         } label: {
@@ -378,6 +428,7 @@ struct ContentView: View {
                                     //180
                                     thirdAchievementAchieved = playTime >= 180
                                     if thirdAchievementAchieved {
+                                        sfx.play("AchievementUnlocked.wav")
                                         achievementsCSV = csvByAdding(.survive3min, to: achievementsCSV)
                                     }
                                 }
@@ -386,6 +437,7 @@ struct ContentView: View {
                                     //360
                                     fourthAchievementAchieved = playTime >= 360
                                     if fourthAchievementAchieved {
+                                        sfx.play("AchievementUnlocked.wav")
                                         achievementsCSV = csvByAdding(.survive6min, to: achievementsCSV)
                                     }
                                 }
@@ -406,6 +458,7 @@ struct ContentView: View {
                 }
                 HStack{
                     Button {
+                        sfx.play("ButtonPressed.wav")
                         startGame()
                     } label: {
                         Image("Replay_Button")
@@ -413,6 +466,7 @@ struct ContentView: View {
                             .frame(width: 170, height: 170)
                     }
                     Button {
+                        sfx.play("ButtonPressed.wav")
                         playerLost = false
                         startupScene?.isPaused = false
                         screenDirection = "startup"
@@ -470,7 +524,7 @@ struct ContentView: View {
                 star.position(x: 61, y: isPad ? 360 : 345)
             }
             Button {
-                print(geometry.size.height)
+                sfx.play("ButtonPressed.wav")
                 startGame()
             } label: {
                 Image("Start_Button")
@@ -480,8 +534,8 @@ struct ContentView: View {
             .position(x: 195, y: 780)
             
             Button {
+                sfx.play("ButtonPressed.wav")
                 isSetting = true
-                
             } label: {
                 Image("Settings_Button")
                     .resizable()
@@ -490,6 +544,7 @@ struct ContentView: View {
             .position(x: 195, y: 590)
             
             Button {
+                sfx.play("ButtonPressed.wav")
                 startupScene?.isPaused = true
                 skinsSceneID = UUID()
                 screenDirection = "skins"
@@ -501,6 +556,7 @@ struct ContentView: View {
             .position(x: 52, y: 770)
             
             Button {
+                sfx.play("ButtonPressed.wav")
                 startupScene?.isPaused = true
                 achievementSceneID = UUID()
                 screenDirection = "achievement"
@@ -523,6 +579,7 @@ struct ContentView: View {
                     settings
                 }
                 Button {
+                    sfx.play("ButtonPressed.wav")
                     isSetting = false
                 } label: {
                     exit
@@ -556,11 +613,12 @@ struct ContentView: View {
                 .onReceive(scene.powerUpPublisher) {
                     if !firstAchievementAchieved {
                         firstAchievementAchieved = true
+                        sfx.play("AchievementUnlocked.wav")
                         achievementsCSV = csvByAdding(.allPowersActivated, to: achievementsCSV)
                     }
                 }
             Button {
-                //transport to setting scene
+                sfx.play("ButtonPressed.wav")
                 pinballScene?.isPaused = true
                 isSetting = true
                 
@@ -594,6 +652,7 @@ struct ContentView: View {
                     if !secondAchievementAchieved{
                         secondAchievementAchieved = bossFightCount >= 5
                         if secondAchievementAchieved {
+                            sfx.play("AchievementUnlocked.wav")
                             achievementsCSV = csvByAdding(.fiveBossWins, to: achievementsCSV)
                         }
                     }
@@ -609,11 +668,12 @@ struct ContentView: View {
                 .onReceive(scene.neverRecievedDamagePublisher) {
                     if !fifthAchievementAchieved {
                         fifthAchievementAchieved = true
+                        sfx.play("AchievementUnlocked.wav")
                         achievementsCSV = csvByAdding(.noDamage, to: achievementsCSV)
                     }
                 }
             Button {
-                //transport to setting scene
+                sfx.play("ButtonPressed.wav")
                 bossScene?.isPaused = true
                 isSetting = true
                 
@@ -666,6 +726,7 @@ struct ContentView: View {
             .position(x: 195, y: 400)
             Button {
                 achievementSceneID = UUID()
+                sfx.play("ButtonPressed.wav")
                 screenDirection = "startup"
                 startupScene?.isPaused = false
             } label: {

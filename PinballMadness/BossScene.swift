@@ -71,6 +71,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         completion: @escaping () -> Void
     ) {
         guard node.action(forKey: key) == nil, !bossIsWindingUp else { return }
+        self.run(.playSoundFileNamed("BossLaserAttackChargeUp.wav", waitForCompletion: false))
         bossIsWindingUp = true
         
         let startScaleX = node.xScale
@@ -111,6 +112,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         completion: @escaping () -> Void
     ) {
         guard node.action(forKey: key) == nil, !bossIsWindingUp else { return }
+        self.run(.playSoundFileNamed("BossPushAttackCharge.wav", waitForCompletion: false))
         bossIsWindingUp = true
         
         let startScaleX = node.xScale
@@ -203,6 +205,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         timeSurvivedValue += 1 / 60.0
         if ballHealth <= 0 {
+            self.run(SKAction.playSoundFileNamed("LoseSound.mp3", waitForCompletion: true))
             losePublisher.send()
         }
         
@@ -394,11 +397,13 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
                 guard let node = body.node else { return }
                 switch node.name {
                 case "flipLeft", "flipLeftTap" where self.leftOwner == nil:
+                    self.run(.playSoundFileNamed("FlipperSoundEffect.wav", waitForCompletion: false))
                     self.leftOwner = touch
                     self.leftTouchDown = true
                     self.flipLeft.physicsBody?.angularVelocity = 0
                     self.flipLeft.physicsBody?.applyAngularImpulse(420)
                 case "flipRight", "flipRightTap" where self.rightOwner == nil:
+                    self.run(.playSoundFileNamed("FlipperSoundEffect.wav", waitForCompletion: false))
                     self.rightOwner = touch
                     self.rightTouchDown = true
                     self.flipRight.physicsBody?.angularVelocity = 0
@@ -406,8 +411,8 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
                     
                 case "Pinball":
                     if self.jumpBoostAvailable {
+                        self.run(.playSoundFileNamed("BallJump.wav", waitForCompletion: false))
                         self.jumpBoostAvailable = false
-                        // compute side vs center using BALL position
                         let ballX = self.ball.position.x
                         let ballDistanceLeft = ballX
                         let ballDistanceRight = self.frame.width - ballX
@@ -419,8 +424,8 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
                     
                 case "PinballDup":
                     if self.jumpBoostAvailable {
+                        self.run(.playSoundFileNamed("BallJump.wav", waitForCompletion: false))
                         self.jumpBoostAvailable = false
-                        // compute side vs center using DUP BALL position
                         let x = node.position.x
                         let left = x
                         let right = self.frame.width - x
@@ -504,8 +509,10 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
 
             switch bumper.name {
             case "bumperRight":
+                self.run(.playSoundFileNamed("BumperSoundEffect.mp3", waitForCompletion: false))
                 impulse = CGVector(dx: -80, dy: 0)
             case "bumperLeft":
+                self.run(.playSoundFileNamed("BumperSoundEffect.mp3", waitForCompletion: false))
                 impulse = CGVector(dx: 80, dy: 0)
             default:
                 impulse = CGVector(dx: 0, dy: 30)
@@ -527,6 +534,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         }
         
         if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.meteor {
+            self.run(.playSoundFileNamed("HittingMeteorSoundEffect.wav", waitForCompletion: false))
             meteorApplyImpulse()
         }
     }
@@ -562,9 +570,11 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.bossAttack {
             if otherNode.name == "pushAttack" {
+                self.run(.playSoundFileNamed("GettingHitWithAirAttack.wav", waitForCompletion: false))
                 ball.physicsBody?.applyImpulse(CGVector(dx: (bossPushAttack.physicsBody?.velocity.dx)! * 200, dy: (bossPushAttack.physicsBody?.velocity.dx)! * 200))
             }
             else {
+                self.run(.playSoundFileNamed("LaserImpactSound.wav", waitForCompletion: false))
                 ballHealth -= 100
             }
             otherNode.removeFromParent()
@@ -614,8 +624,10 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
                         node.removeFromParent()
                     }
                 }
+                self.run(SKAction.playSoundFileNamed("BallRevival.wav", waitForCompletion: false))
                 dupBallThere = false
             } else {
+                self.run(SKAction.playSoundFileNamed("LoseSound.mp3", waitForCompletion: true))
                 losePublisher.send()
             }
         }
