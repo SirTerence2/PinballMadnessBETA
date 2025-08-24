@@ -556,17 +556,19 @@ struct ContentView: View {
             }
             .position(x: 52, y: 770)
             
-            Button {
-                sfx.play("ButtonPressed.wav")
-                startupScene?.isPaused = true
-                achievementSceneID = UUID()
-                screenDirection = "achievement"
-            } label: {
-                Image("Achievements_Button")
-                    .resizable()
-                    .frame(width: 120, height: 120)
+            if !firstAchievementAchieved && !secondAchievementAchieved && !thirdAchievementAchieved && !fourthAchievementAchieved && !fifthAchievementAchieved {
+                Button {
+                    sfx.play("ButtonPressed.wav")
+                    startupScene?.isPaused = true
+                    achievementSceneID = UUID()
+                    screenDirection = "achievement"
+                } label: {
+                    Image("Achievements_Button")
+                        .resizable()
+                        .frame(width: 120, height: 120)
+                }
+                .position(x: 330, y: 670)
             }
-            .position(x: 330, y: 670)
             if isSetting {
                 Color.black.opacity(0.8)
                     .ignoresSafeArea()
