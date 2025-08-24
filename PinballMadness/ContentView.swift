@@ -248,7 +248,6 @@ struct ContentView: View {
                 }
                 else {
                     backgroundPinball
-                        .frame(width: geo.size.width, height: geo.size.height)
                         .ignoresSafeArea()
                 }
                 

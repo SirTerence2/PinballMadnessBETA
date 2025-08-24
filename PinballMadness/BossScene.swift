@@ -1031,7 +1031,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         flipLeft = SKSpriteNode(imageNamed: "LeftFlipper")
         flipLeft.size = CGSize(width: 180, height: 180)
         flipLeft.anchorPoint = CGPoint(x: 0.18, y: 0.20)
-        flipLeft.position = CGPoint(x: 66, y: 110)
+        flipLeft.position = CGPoint(x: 66, y: 93)
         flipLeft.name = "flipLeft"
         
         flipLeft.zRotation = rest
@@ -1103,7 +1103,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         flipRight = SKSpriteNode(imageNamed: "RightFlipper")
         flipRight.size = CGSize(width: 180, height: 180)
         flipRight.anchorPoint = CGPoint(x: 0.82, y: 0.20)
-        flipRight.position = CGPoint(x: 324, y: 110)
+        flipRight.position = CGPoint(x: 324, y: 93)
         flipRight.name = "flipRight"
         
 
