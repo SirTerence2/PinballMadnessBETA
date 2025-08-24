@@ -27,6 +27,9 @@
 		2A0ED88C2E5A8C4300884F3B /* BallJump.wav in Resources */ = {isa = PBXBuildFile; fileRef = 2A0ED88B2E5A8C4300884F3B /* BallJump.wav */; };
 		2A0ED8902E5A9D7000884F3B /* BossPushAttackCharge.ogg in Resources */ = {isa = PBXBuildFile; fileRef = 2A0ED88F2E5A9D7000884F3B /* BossPushAttackCharge.ogg */; };
 		2A0ED8922E5A9F6100884F3B /* BossPushAttackCharge.wav in Resources */ = {isa = PBXBuildFile; fileRef = 2A0ED8912E5A9F6100884F3B /* BossPushAttackCharge.wav */; };
+		2A1E506D2E5AE07F0041DF44 /* PinballScreenMusic.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 2A1E506B2E5AE07F0041DF44 /* PinballScreenMusic.mp3 */; };
+		2A1E506E2E5AE07F0041DF44 /* BossMusic.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 2A1E506A2E5AE07F0041DF44 /* BossMusic.mp3 */; };
+		2A1E506F2E5AE07F0041DF44 /* StartupScreenMusic.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 2A1E506C2E5AE07F0041DF44 /* StartupScreenMusic.mp3 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -67,6 +70,9 @@
 		2A0ED88B2E5A8C4300884F3B /* BallJump.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BallJump.wav; sourceTree = "<group>"; };
 		2A0ED88F2E5A9D7000884F3B /* BossPushAttackCharge.ogg */ = {isa = PBXFileReference; lastKnownFileType = file; path = BossPushAttackCharge.ogg; sourceTree = "<group>"; };
 		2A0ED8912E5A9F6100884F3B /* BossPushAttackCharge.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BossPushAttackCharge.wav; sourceTree = "<group>"; };
+		2A1E506A2E5AE07F0041DF44 /* BossMusic.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = BossMusic.mp3; sourceTree = "<group>"; };
+		2A1E506B2E5AE07F0041DF44 /* PinballScreenMusic.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = PinballScreenMusic.mp3; sourceTree = "<group>"; };
+		2A1E506C2E5AE07F0041DF44 /* StartupScreenMusic.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = StartupScreenMusic.mp3; sourceTree = "<group>"; };
 		2AFE52E92E347FEB00B2CDEA /* PinballMadness.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PinballMadness.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2AFE52F92E347FEC00B2CDEA /* PinballMadnessTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PinballMadnessTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2AFE53032E347FEC00B2CDEA /* PinballMadnessUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PinballMadnessUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -138,6 +144,9 @@
 				2A0ED8752E5A803100884F3B /* SettingChanged.wav */,
 				2A0ED8762E5A803100884F3B /* TeleportationFromPinballToBoss.wav */,
 				2A0ED8772E5A803100884F3B /* TransitionSoundFromFlipperToPun.wav */,
+				2A1E506A2E5AE07F0041DF44 /* BossMusic.mp3 */,
+				2A1E506B2E5AE07F0041DF44 /* PinballScreenMusic.mp3 */,
+				2A1E506C2E5AE07F0041DF44 /* StartupScreenMusic.mp3 */,
 			);
 			path = Audio;
 			sourceTree = "<group>";
@@ -297,6 +306,9 @@
 				2A0ED87F2E5A803100884F3B /* FlipperSoundEffect.wav in Resources */,
 				2A0ED8802E5A803100884F3B /* PunReleased.wav in Resources */,
 				2A0ED8812E5A803100884F3B /* TeleportationFromPinballToBoss.wav in Resources */,
+				2A1E506D2E5AE07F0041DF44 /* PinballScreenMusic.mp3 in Resources */,
+				2A1E506E2E5AE07F0041DF44 /* BossMusic.mp3 in Resources */,
+				2A1E506F2E5AE07F0041DF44 /* StartupScreenMusic.mp3 in Resources */,
 				2A0ED8822E5A803100884F3B /* ButtonPressed.wav in Resources */,
 				2A0ED8832E5A803100884F3B /* GettingHitWithAirAttack.wav in Resources */,
 				2A0ED8842E5A803100884F3B /* TransitionSoundFromFlipperToPun.wav in Resources */,

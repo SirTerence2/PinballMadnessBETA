@@ -46,28 +46,28 @@ enum Achievement: String, CaseIterable {
 
 final class SFX: ObservableObject {
     static let shared = SFX()
+
     private var players: [String: AVAudioPlayer] = [:]
+    private var music: AVAudioPlayer?
+    private var currentTrack: String?
+
+    private init() {
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.ambient, mode: .default, options: [.mixWithOthers])
+        try? session.setActive(true)
+    }
 
     func play(_ filename: String, volume: Float = 1, loops: Int = 0) {
-        // split name/ext if provided
         let ns = filename as NSString
         let name = ns.deletingPathExtension
         let ext  = ns.pathExtension.isEmpty ? "wav" : ns.pathExtension
+        let key  = "\(name).\(ext)"
 
-        let key = "\(name).\(ext)"
-        if players[key] == nil {
-            guard let url = Bundle.main.url(forResource: name, withExtension: ext) else {
-                print("⚠️ Missing audio: \(key)")
-                return
-            }
-            do {
-                let p = try AVAudioPlayer(contentsOf: url)
-                p.prepareToPlay()
-                players[key] = p
-            } catch {
-                print("⚠️ AVAudioPlayer error for \(key):", error)
-                return
-            }
+        if players[key] == nil,
+           let url = Bundle.main.url(forResource: name, withExtension: ext),
+           let p = try? AVAudioPlayer(contentsOf: url) {
+            p.prepareToPlay()
+            players[key] = p
         }
         guard let p = players[key] else { return }
         p.currentTime = 0
@@ -78,10 +78,39 @@ final class SFX: ObservableObject {
 
     func stop(_ filename: String) {
         let ns = filename as NSString
-        let name = ns.deletingPathExtension
-        let ext  = ns.pathExtension.isEmpty ? "wav" : ns.pathExtension
-        players["\(name).\(ext)"]?.stop()
+        players["\(ns.deletingPathExtension).\(ns.pathExtension.isEmpty ? "wav" : ns.pathExtension)"]?.stop()
     }
+
+    func switchMusic(to filename: String, volume: Float = 0.35, crossfade: TimeInterval = 1.0) {
+        if currentTrack == filename, music?.isPlaying == true { return }
+
+        let ns = filename as NSString
+        let name = ns.deletingPathExtension
+        let ext  = ns.pathExtension.isEmpty ? "mp3" : ns.pathExtension
+        guard let url = Bundle.main.url(forResource: name, withExtension: ext) else {
+            print("Missing music: \(name).\(ext)"); return
+        }
+
+        guard let newPlayer = try? AVAudioPlayer(contentsOf: url) else { return }
+        newPlayer.numberOfLoops = -1
+        newPlayer.volume = 0
+        newPlayer.prepareToPlay()
+        newPlayer.play()
+        newPlayer.setVolume(volume, fadeDuration: crossfade)
+
+        let old = music
+        old?.setVolume(0, fadeDuration: crossfade)
+        DispatchQueue.main.asyncAfter(deadline: .now() + crossfade + 0.1) {
+            old?.stop()
+        }
+
+        music = newPlayer
+        currentTrack = filename
+    }
+
+    func pauseMusic() { music?.pause() }
+    func resumeMusic() { music?.play() }
+    func setMusicVolume(_ v: Float) { music?.volume = v }
 }
 
 struct ContentView: View {
@@ -165,6 +194,19 @@ struct ContentView: View {
             startupScene?.isPaused = isSetting
         default:
             break
+        }
+    }
+    
+    private func trackForScreen(_ screenDirection: String) -> String? {
+        switch screenDirection {
+        case "startup", "skins", "achievement":
+            return "StartupScreenMusic.mp3"
+        case "pinball":
+            return "PinballScreenMusic.mp3"
+        case "boss":
+            return "BossMusic.mp3"
+        default:
+            return nil
         }
     }
     
@@ -389,13 +431,23 @@ struct ContentView: View {
                 .position(x: geo.size.width / 2, y: geo.size.height / 2)
             }
         }
+        .onAppear {
+            if let t = trackForScreen(screenDirection) {
+                SFX.shared.switchMusic(to: t, volume: 0.35, crossfade: 0.8)
+            }
+        }
+
+        .onChange(of: screenDirection) { newScreen in
+            if let t = trackForScreen(newScreen) {
+                SFX.shared.switchMusic(to: t, volume: 0.35, crossfade: 1.2)
+            }
+        }
         .onAppear { applyPauseStateForCurrentScreen() }
         .onChange(of: scenePhase) { phase in
             switch phase {
             case .active:
-                applyPauseStateForCurrentScreen()   // re-assert pause after returning
+                applyPauseStateForCurrentScreen()
             case .inactive, .background:
-                // pause everything when leaving
                 pinballScene?.isPaused = true
                 bossScene?.isPaused = true
                 startupScene?.isPaused = true

@@ -119,6 +119,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     override func didMove(to view: SKView) {
         view.isMultipleTouchEnabled = true
         guard !isSceneSetup else {
+            self.run(.playSoundFileNamed("TeleportationFromPinballToBoss.wav", waitForCompletion: true))
             self.removeAction(forKey: "itemCleanup")
             self.summonedOtherItems = false
             if !self.isRotaActive() {
