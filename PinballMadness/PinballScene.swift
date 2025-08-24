@@ -117,6 +117,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     var isSceneSetup: Bool = false
     
     override func didMove(to view: SKView) {
+        view.isMultipleTouchEnabled = true
         guard !isSceneSetup else {
             self.removeAction(forKey: "itemCleanup")
             self.summonedOtherItems = false
@@ -125,8 +126,6 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
             }
             return
         }
-        
-        view.isMultipleTouchEnabled = true
         isSceneSetup = true
         pinballWorldNode.name = "headNode"
         
@@ -773,6 +772,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                 
                 self.addTimeLimitForFist()
                 let tickAction = SKAction.run {
+                    self.run(.playSoundFileNamed("ClockTickSound.wav", waitForCompletion: false))
                     self.fistAttackTimer -= 1
                 }
                 
