@@ -34,6 +34,8 @@ private enum DefaultsKey {
     static let selectedSkin = "selectedSkin"
     static let achievementsCount = "achievementsCount"
     static let achievementsCSV = "achievementsCSV"
+    static let volumeMusic = "music"
+    static let volumeSound = "sound"
 }
 
 enum Achievement: String, CaseIterable {
@@ -48,7 +50,7 @@ final class SFX: ObservableObject {
     static let shared = SFX()
 
     private var players: [String: AVAudioPlayer] = [:]
-    private var music: AVAudioPlayer?
+    public var music: AVAudioPlayer?
     private var currentTrack: String?
 
     private init() {
@@ -57,7 +59,7 @@ final class SFX: ObservableObject {
         try? session.setActive(true)
     }
 
-    func play(_ filename: String, volume: Float = 1, loops: Int = 0) {
+    func play(_ filename: String, volume: Float, loops: Int = 0) {
         let ns = filename as NSString
         let name = ns.deletingPathExtension
         let ext  = ns.pathExtension.isEmpty ? "wav" : ns.pathExtension
@@ -155,6 +157,9 @@ struct ContentView: View {
     @State private var ballCancellable: AnyCancellable?
     @State private var bossFightCount: Int = 0
     @StateObject private var sfx = SFX.shared
+    //volumeSound
+    @AppStorage(DefaultsKey.volumeSound) private var soundPower = 0.5
+    @AppStorage(DefaultsKey.volumeMusic) private var musicPower = 0.2
     
     @State private var positionHistory: [(time: TimeInterval, pos: CGPoint, vel: CGVector?)] = []
     
@@ -274,11 +279,21 @@ struct ContentView: View {
                         }
                         if isSetting {
                             ZStack{
+                                settings
                                 VStack{
-                                    settings
+                                    Slider(value: $musicPower, in: 0...1)
+                                        .onChange(of: musicPower){
+                                            SFX.shared.music?.setVolume(Float(musicPower), fadeDuration: 0)
+                                        }
+                                    Text("Value: \(musicPower, format: .percent.precision(.fractionLength(2)))")
+                                        .onChange(of: soundPower){
+                                            pinballScene?.volumeSound = Float(soundPower)
+                                        }
+                                    Slider(value: $soundPower, in: 0...1)
+                                    Text("Value: \(soundPower, format: .percent.precision(.fractionLength(2)))")
                                 }
                                 Button {
-                                    sfx.play("ButtonPressed.wav")
+                                    sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                                     isSetting = false
                                     pinballScene?.isPaused = false
                                 } label: {
@@ -297,11 +312,21 @@ struct ContentView: View {
                                 BossScreenView(geometry: geometry, scene: scene, settings: settings, background: background, exit: exit, settingsButton: settingsButton)
                                 if isSetting {
                                     ZStack{
+                                        settings
                                         VStack{
-                                            settings
+                                            Slider(value: $musicPower, in: 0...1)
+                                                .onChange(of: musicPower){
+                                                    SFX.shared.music?.setVolume(Float(musicPower), fadeDuration: 0)
+                                                }
+                                            Text("Value: \(musicPower, format: .percent.precision(.fractionLength(2)))")
+                                            Slider(value: $soundPower, in: 0...1)
+                                                .onChange(of: soundPower){
+                                                    pinballScene?.volumeSound = Float(soundPower)
+                                                }
+                                            Text("Value: \(soundPower, format: .percent.precision(.fractionLength(2)))")
                                         }
                                         Button {
-                                            sfx.play("ButtonPressed.wav")
+                                            sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                                             isSetting = false
                                             bossScene?.isPaused = false
                                         } label: {
@@ -326,7 +351,7 @@ struct ContentView: View {
                                 .id(achievementSceneID)
                                 .ignoresSafeArea()
                             Button {
-                                sfx.play("SettingChanged.wav")
+                                sfx.play("SettingChanged.wav", volume: Float(soundPower))
                                 ballDesign = "Pinball"
                             } label: {
                                 skinBox
@@ -340,7 +365,7 @@ struct ContentView: View {
                             .position(x: 115, y: 245)
                             
                             Button {
-                                sfx.play("SettingChanged.wav")
+                                sfx.play("SettingChanged.wav", volume: Float(soundPower))
                                 ballDesign = "PinballNuclear"
                             } label: {
                                 skinBox
@@ -355,7 +380,7 @@ struct ContentView: View {
                             
                             if numberOfAchievementsAchieved >= 3 {
                                 Button {
-                                    sfx.play("SettingChanged.wav")
+                                    sfx.play("SettingChanged.wav", volume: Float(soundPower))
                                     ballDesign = "PinballSharkSkin"
                                 } label: {
                                     skinBox
@@ -381,7 +406,7 @@ struct ContentView: View {
                             
                             if numberOfAchievementsAchieved >= 5 {
                                 Button {
-                                    sfx.play("SettingChanged.wav")
+                                    sfx.play("SettingChanged.wav", volume: Float(soundPower))
                                     ballDesign = "SpecialPinball"
                                 } label: {
                                     skinBox
@@ -416,7 +441,7 @@ struct ContentView: View {
                             .position(x: 190, y: 590)
                         }
                         Button {
-                            sfx.play("ButtonPressed.wav")
+                            sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                             startupScene?.isPaused = false
                             screenDirection = "startup"
                         } label: {
@@ -432,13 +457,13 @@ struct ContentView: View {
         }
         .onAppear {
             if let t = trackForScreen(screenDirection) {
-                SFX.shared.switchMusic(to: t, volume: 0.35, crossfade: 0.8)
+                SFX.shared.switchMusic(to: t, volume: Float(musicPower), crossfade: 0.8)
             }
         }
 
         .onChange(of: screenDirection) { newScreen in
             if let t = trackForScreen(newScreen) {
-                SFX.shared.switchMusic(to: t, volume: 0.35, crossfade: 1.2)
+                SFX.shared.switchMusic(to: t, volume: Float(musicPower), crossfade: 1.2)
             }
         }
         .onAppear { applyPauseStateForCurrentScreen() }
@@ -472,7 +497,7 @@ struct ContentView: View {
                             .frame(width: 390, height: 1000)
                             .offset(y: -60)
                             .onAppear {
-                                sfx.play("LoseSound.mp3")
+                                sfx.play("LoseSound.mp3", volume: Float(soundPower))
                                 playTime += pinballScene!.timeSurvivedValue
                                 minutes = Int(playTime) / 60
                                 seconds = Int(playTime) % 60
@@ -480,7 +505,7 @@ struct ContentView: View {
                                     //180
                                     thirdAchievementAchieved = playTime >= 180
                                     if thirdAchievementAchieved {
-                                        sfx.play("AchievementUnlocked.wav")
+                                        sfx.play("AchievementUnlocked.wav", volume: Float(soundPower))
                                         achievementsCSV = csvByAdding(.survive3min, to: achievementsCSV)
                                     }
                                 }
@@ -489,7 +514,7 @@ struct ContentView: View {
                                     //360
                                     fourthAchievementAchieved = playTime >= 360
                                     if fourthAchievementAchieved {
-                                        sfx.play("AchievementUnlocked.wav")
+                                        sfx.play("AchievementUnlocked.wav", volume: Float(soundPower))
                                         achievementsCSV = csvByAdding(.survive6min, to: achievementsCSV)
                                     }
                                 }
@@ -510,7 +535,7 @@ struct ContentView: View {
                 }
                 HStack{
                     Button {
-                        sfx.play("ButtonPressed.wav")
+                        sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                         startGame()
                     } label: {
                         Image("Replay_Button")
@@ -518,7 +543,7 @@ struct ContentView: View {
                             .frame(width: 170, height: 170)
                     }
                     Button {
-                        sfx.play("ButtonPressed.wav")
+                        sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                         playerLost = false
                         startupScene?.isPaused = false
                         screenDirection = "startup"
@@ -576,7 +601,7 @@ struct ContentView: View {
                 star.position(x: 61, y: isPad ? 360 : 345)
             }
             Button {
-                sfx.play("ButtonPressed.wav")
+                sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                 startGame()
             } label: {
                 Image("Start_Button")
@@ -586,7 +611,7 @@ struct ContentView: View {
             .position(x: 195, y: 780)
             
             Button {
-                sfx.play("ButtonPressed.wav")
+                sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                 isSetting = true
             } label: {
                 Image("Settings_Button")
@@ -596,7 +621,7 @@ struct ContentView: View {
             .position(x: 195, y: 590)
             
             Button {
-                sfx.play("ButtonPressed.wav")
+                sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                 startupScene?.isPaused = true
                 skinsSceneID = UUID()
                 screenDirection = "skins"
@@ -609,7 +634,7 @@ struct ContentView: View {
             
             if !firstAchievementAchieved && !secondAchievementAchieved && !thirdAchievementAchieved && !fourthAchievementAchieved && !fifthAchievementAchieved {
                 Button {
-                    sfx.play("ButtonPressed.wav")
+                    sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                     startupScene?.isPaused = true
                     achievementSceneID = UUID()
                     screenDirection = "achievement"
@@ -629,11 +654,21 @@ struct ContentView: View {
         }
         if isSetting {
             ZStack{
+                settings
                 VStack{
-                    settings
+                    Slider(value: $musicPower, in: 0...1)
+                        .onChange(of: musicPower){
+                            SFX.shared.music?.setVolume(Float(musicPower), fadeDuration: 0)
+                        }
+                    Text("Value: \(musicPower, format: .percent.precision(.fractionLength(2)))")
+                    Slider(value: $soundPower, in: 0...1)
+                        .onChange(of: soundPower){
+                            pinballScene?.volumeSound = Float(soundPower)
+                        }
+                    Text("Value: \(soundPower, format: .percent.precision(.fractionLength(2)))")
                 }
                 Button {
-                    sfx.play("ButtonPressed.wav")
+                    sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                     isSetting = false
                 } label: {
                     exit
@@ -658,6 +693,7 @@ struct ContentView: View {
                     let newBossScene = BossScene(size: CGSize(width: 390, height: 844), ballSkin: ballDesign, dupBallThere: isDupBallThere)
                     bossScene = newBossScene
                     bossSceneID = UUID()
+                    bossScene?.volumeSound = Float(soundPower)
                     screenDirection = "boss"
                 }
                 .onReceive(scene.losePublisher) {
@@ -667,12 +703,12 @@ struct ContentView: View {
                 .onReceive(scene.powerUpPublisher) {
                     if !firstAchievementAchieved {
                         firstAchievementAchieved = true
-                        sfx.play("AchievementUnlocked.wav")
+                        sfx.play("AchievementUnlocked.wav", volume: Float(soundPower))
                         achievementsCSV = csvByAdding(.allPowersActivated, to: achievementsCSV)
                     }
                 }
             Button {
-                sfx.play("ButtonPressed.wav")
+                sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                 pinballScene?.isPaused = true
                 isSetting = true
                 
@@ -702,14 +738,14 @@ struct ContentView: View {
                 .id(bossSceneID)
                 .ignoresSafeArea()
                 .onAppear(){
-                    sfx.play("TeleportationFromPinballToBoss.wav")
+                    sfx.play("TeleportationFromPinballToBoss.wav", volume: Float(soundPower))
                 }
                 .onReceive(scene.victoryPublisher){
                     bossFightCount += 1
                     if !secondAchievementAchieved{
                         secondAchievementAchieved = bossFightCount >= 5
                         if secondAchievementAchieved {
-                            sfx.play("AchievementUnlocked.wav")
+                            sfx.play("AchievementUnlocked.wav", volume: Float(soundPower))
                             achievementsCSV = csvByAdding(.fiveBossWins, to: achievementsCSV)
                         }
                     }
@@ -725,12 +761,12 @@ struct ContentView: View {
                 .onReceive(scene.neverRecievedDamagePublisher) {
                     if !fifthAchievementAchieved {
                         fifthAchievementAchieved = true
-                        sfx.play("AchievementUnlocked.wav")
+                        sfx.play("AchievementUnlocked.wav", volume: Float(soundPower))
                         achievementsCSV = csvByAdding(.noDamage, to: achievementsCSV)
                     }
                 }
             Button {
-                sfx.play("ButtonPressed.wav")
+                sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                 bossScene?.isPaused = true
                 isSetting = true
                 
@@ -783,7 +819,7 @@ struct ContentView: View {
             .position(x: 195, y: 400)
             Button {
                 achievementSceneID = UUID()
-                sfx.play("ButtonPressed.wav")
+                sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                 screenDirection = "startup"
                 startupScene?.isPaused = false
             } label: {
@@ -814,6 +850,7 @@ struct ContentView: View {
             scene.positionHistory = positionHistory
             screenDirection = "pinball"
             scene.ballSkin = ballDesign
+            scene.volumeSound = Float(soundPower)
             if !isDupBallThere {
                 for node in scene.pinballWorldNode.children {
                     if node.name == "PinballDup" {
@@ -852,6 +889,7 @@ struct ContentView: View {
         pinballScene?.removeAllChildren()
         pinballScene = PinballScene(size: CGSize(width: 390, height: 944))
         
+        pinballScene?.volumeSound = Float(soundPower)
         pinballScene?.ballSkin = ballDesign
         pinballScene?.activatedDupPower = false
         pinballScene?.activatedRotaPower = false
