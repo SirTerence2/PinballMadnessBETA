@@ -36,6 +36,7 @@ private enum DefaultsKey {
     static let achievementsCSV = "achievementsCSV"
     static let volumeMusic = "music"
     static let volumeSound = "sound"
+    static let brightness = "brightness"
 }
 
 enum Achievement: String, CaseIterable {
@@ -160,6 +161,7 @@ struct ContentView: View {
     //volumeSound
     @AppStorage(DefaultsKey.volumeSound) private var soundPower = 0.5
     @AppStorage(DefaultsKey.volumeMusic) private var musicPower = 0.2
+    @AppStorage(DefaultsKey.brightness) private var brightness = 1.0
     
     @State private var positionHistory: [(time: TimeInterval, pos: CGPoint, vel: CGVector?)] = []
     
@@ -224,6 +226,52 @@ struct ContentView: View {
         let settings = Image("SettingsPage")
             .resizable()
         
+        let sliders = VStack{
+            Slider(value: $musicPower, in: 0...1)
+                .onChange(of: musicPower){
+                    SFX.shared.music?.setVolume(Float(musicPower), fadeDuration: 0)
+                }
+                .offset(y: -25)
+            Text("Value: \(musicPower, format: .percent.precision(.fractionLength(0)))")
+                .foregroundColor(.blue)
+                .font(.system(size: 25, weight: .bold))
+                .background(
+                    RoundedRectangle(cornerRadius: 7)
+                        .fill(Color.black)
+                )
+                .offset(y: -35)
+            Slider(value: $soundPower, in: 0...1)
+                .onChange(of: soundPower){
+                    bossScene?.volumeSound = Float(soundPower)
+                    pinballScene?.volumeSound = Float(soundPower)
+                }
+                .offset(y: -3)
+            Text("Value: \(soundPower, format: .percent.precision(.fractionLength(0)))")
+                .foregroundColor(.green)
+                .font(.system(size: 25, weight: .bold))
+                .background(
+                    RoundedRectangle(cornerRadius: 7)
+                        .fill(Color.black)
+                )
+                .offset(y: -13)
+            //brightness
+            Slider(value: $brightness, in: 0...1)
+                .onChange(of: brightness){
+                    bossScene?.backgroundBrightness = Float(brightness)
+                    pinballScene?.backgroundBrightness = Float(brightness)
+                }
+                .offset(y: 25)
+            Text("Value: \(brightness, format: .percent.precision(.fractionLength(0)))")
+                .foregroundColor(.cyan)
+                .font(.system(size: 25, weight: .bold))
+                .background(
+                    RoundedRectangle(cornerRadius: 7)
+                        .fill(Color.black)
+                )
+                .offset(y: 18)
+            
+        }
+            .offset(y: 40)
         let exit = Image("Exit_button")
             .resizable()
             .frame(width: 172, height: 169)
@@ -266,7 +314,7 @@ struct ContentView: View {
                         if let scene = startupScene {
                             ZStack {
                                 GeometryReader { geometry in
-                                    startupScreenView(geometry: geometry, scene: scene, star: star, settings: settings, background: background, exit: exit)
+                                    startupScreenView(geometry: geometry, scene: scene, star: star, settings: settings, background: background, exit: exit, sliders: sliders)
                                 }
                             }
                         }
@@ -280,18 +328,7 @@ struct ContentView: View {
                         if isSetting {
                             ZStack{
                                 settings
-                                VStack{
-                                    Slider(value: $musicPower, in: 0...1)
-                                        .onChange(of: musicPower){
-                                            SFX.shared.music?.setVolume(Float(musicPower), fadeDuration: 0)
-                                        }
-                                    Text("Value: \(musicPower, format: .percent.precision(.fractionLength(2)))")
-                                        .onChange(of: soundPower){
-                                            pinballScene?.volumeSound = Float(soundPower)
-                                        }
-                                    Slider(value: $soundPower, in: 0...1)
-                                    Text("Value: \(soundPower, format: .percent.precision(.fractionLength(2)))")
-                                }
+                                sliders
                                 Button {
                                     sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                                     isSetting = false
@@ -313,18 +350,7 @@ struct ContentView: View {
                                 if isSetting {
                                     ZStack{
                                         settings
-                                        VStack{
-                                            Slider(value: $musicPower, in: 0...1)
-                                                .onChange(of: musicPower){
-                                                    SFX.shared.music?.setVolume(Float(musicPower), fadeDuration: 0)
-                                                }
-                                            Text("Value: \(musicPower, format: .percent.precision(.fractionLength(2)))")
-                                            Slider(value: $soundPower, in: 0...1)
-                                                .onChange(of: soundPower){
-                                                    pinballScene?.volumeSound = Float(soundPower)
-                                                }
-                                            Text("Value: \(soundPower, format: .percent.precision(.fractionLength(2)))")
-                                        }
+                                        sliders
                                         Button {
                                             sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                                             isSetting = false
@@ -520,18 +546,15 @@ struct ContentView: View {
                                 }
                                 playTimerLabel = String(format: "%02d:%02d", minutes, seconds)
                             }
-                        VStack{
-                            Text("Time Survived: " + "\n" +  "\t\t  " + playTimerLabel)
-                                .font(.system(size: 34 * geo.size.width / 390))
-                                .foregroundColor(.red)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.black)
-                                )
-                                .offset(y: 210)
-                        }
+                        Text("Time Survived: " + "\n" +  "\t\t  " + playTimerLabel)
+                            .font(.system(size: 34 * geo.size.width / 390))
+                            .foregroundColor(.red)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.black)
+                            )
+                            .offset(y: 210)
                     }
-                    
                 }
                 HStack{
                     Button {
@@ -558,7 +581,7 @@ struct ContentView: View {
     }
     
     @ViewBuilder
-    func startupScreenView(geometry: GeometryProxy, scene: StartupScene, star: some View, settings: some View, background: some View, exit: some View) -> some View {
+    func startupScreenView(geometry: GeometryProxy, scene: StartupScene, star: some View, settings: some View, background: some View, exit: some View, sliders: some View) -> some View {
         ZStack {
             SpriteView(scene: scene)
                 .id(startupSceneID)
@@ -655,18 +678,7 @@ struct ContentView: View {
         if isSetting {
             ZStack{
                 settings
-                VStack{
-                    Slider(value: $musicPower, in: 0...1)
-                        .onChange(of: musicPower){
-                            SFX.shared.music?.setVolume(Float(musicPower), fadeDuration: 0)
-                        }
-                    Text("Value: \(musicPower, format: .percent.precision(.fractionLength(2)))")
-                    Slider(value: $soundPower, in: 0...1)
-                        .onChange(of: soundPower){
-                            pinballScene?.volumeSound = Float(soundPower)
-                        }
-                    Text("Value: \(soundPower, format: .percent.precision(.fractionLength(2)))")
-                }
+                sliders
                 Button {
                     sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                     isSetting = false
@@ -690,10 +702,9 @@ struct ContentView: View {
                 .onReceive(scene.bossPublisher) {
                     positionHistory = pinballScene?.positionHistory ?? []
                     pinballScene?.isPaused = true
-                    let newBossScene = BossScene(size: CGSize(width: 390, height: 844), ballSkin: ballDesign, dupBallThere: isDupBallThere)
+                    let newBossScene = BossScene(size: CGSize(width: 390, height: 844), ballSkin: ballDesign, dupBallThere: isDupBallThere, volume: Float(soundPower), brightness: Float(brightness))
                     bossScene = newBossScene
                     bossSceneID = UUID()
-                    bossScene?.volumeSound = Float(soundPower)
                     screenDirection = "boss"
                 }
                 .onReceive(scene.losePublisher) {
@@ -839,14 +850,6 @@ struct ContentView: View {
         if let scene = pinballScene {
             scene.isPaused = false
             scene.physicsWorld.speed = 1.0
-            scene.flipLeft.physicsBody?.angularVelocity = 0
-            scene.flipLeft.physicsBody?.velocity = .zero
-            scene.flipLeft.physicsBody?.isResting = true
-            scene.flipLeft.zRotation = -.pi/3
-            scene.flipRight.physicsBody?.angularVelocity = 0
-            scene.flipRight.physicsBody?.velocity = .zero
-            scene.flipRight.physicsBody?.isResting = true
-            scene.flipRight.zRotation = .pi/3
             scene.positionHistory = positionHistory
             screenDirection = "pinball"
             scene.ballSkin = ballDesign
@@ -890,6 +893,7 @@ struct ContentView: View {
         pinballScene = PinballScene(size: CGSize(width: 390, height: 944))
         
         pinballScene?.volumeSound = Float(soundPower)
+        pinballScene?.backgroundBrightness = Float(brightness)
         pinballScene?.ballSkin = ballDesign
         pinballScene?.activatedDupPower = false
         pinballScene?.activatedRotaPower = false

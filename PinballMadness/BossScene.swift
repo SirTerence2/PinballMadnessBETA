@@ -8,6 +8,7 @@ import SpriteKit
 import Combine
 
 class BossScene: SKScene, SKPhysicsContactDelegate {
+    var bg: SKSpriteNode!
     var bumperLeft: SKSpriteNode!
     var bumperRight: SKSpriteNode!
     
@@ -64,11 +65,12 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     private var bossIsWindingUp = false
     
     var volumeSound: Float!
+    var backgroundBrightness: Float!
     
     let flipperSound = SKAudioNode(fileNamed: "FlipperSoundEffect.wav")
     let jumpBallSound = SKAudioNode(fileNamed: "BallJump.wav")
     let bossLaserAttackChargeSound = SKAudioNode(fileNamed: "BossLaserAttackChargeUp.wav")
-    let bossPushAttackChargeSound = SKAudioNode(fileNamed: "BossPushAttackChargeUp.wav")
+    let bossPushAttackChargeSound = SKAudioNode(fileNamed: "BossPushAttackCharge.wav")
     let bumperSound = SKAudioNode(fileNamed: "BumperSoundEffect.mp3")
     let hittingMeteorSound = SKAudioNode(fileNamed: "HittingMeteorSoundEffect.wav")
     let ballReviveSound = SKAudioNode(fileNamed: "BallRevival.wav")
@@ -83,6 +85,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         completion: @escaping () -> Void
     ) {
         guard node.action(forKey: key) == nil, !bossIsWindingUp else { return }
+        self.bossLaserAttackChargeSound.run(.stop())
         self.bossLaserAttackChargeSound.run(.changeVolume(to: self.volumeSound, duration: 0))
         self.bossLaserAttackChargeSound.run(.play())
         bossIsWindingUp = true
@@ -125,6 +128,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         completion: @escaping () -> Void
     ) {
         guard node.action(forKey: key) == nil, !bossIsWindingUp else { return }
+        self.bossPushAttackChargeSound.run(.stop())
         self.bossPushAttackChargeSound.run(.changeVolume(to: self.volumeSound, duration: 0))
         self.bossPushAttackChargeSound.run(.play())
         bossIsWindingUp = true
@@ -159,9 +163,11 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         ]), withKey: key)
     }
     
-    init(size: CGSize, ballSkin: String, dupBallThere: Bool) {
+    init(size: CGSize, ballSkin: String, dupBallThere: Bool, volume: Float, brightness: Float) {
         self.ballSkin = ballSkin
         self.dupBallThere = dupBallThere
+        self.volumeSound = volume
+        self.backgroundBrightness = brightness
         super.init(size: size)
     }
     
@@ -194,6 +200,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         super.update(currentTime)
         driveFlipper(flipLeft,  pressed: leftTouchDown,  pressedTarget: leftPressedAngle,  restTarget: leftRest)
         driveFlipper(flipRight, pressed: rightTouchDown, pressedTarget: rightPressedAngle, restTarget: rightRest)
+        bg.alpha = CGFloat(backgroundBrightness)
         guard let body = ball.physicsBody else { return }
 
         let speed = hypot(body.velocity.dx, body.velocity.dy)
@@ -327,9 +334,6 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         bossPushAttackChargeSound.autoplayLooped = false
         addChild(bossPushAttackChargeSound)
-        
-        bossPushAttackChargeSound.autoplayLooped = false
-        addChild(bossPushAttackChargeSound)
 
         ballReviveSound.autoplayLooped = false
         addChild(ballReviveSound)
@@ -406,6 +410,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         attackObjectCollision(contact)
         ballLoseBoxCollision(contact)
         dupBallLoseBoxCollision(contact)
+        meteorLoseBoxCollision(contact)
     }
     
     private func shortestAngle(_ a: CGFloat, _ b: CGFloat) -> CGFloat {
@@ -457,6 +462,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
                     
                 case "Pinball":
                     if self.jumpBoostAvailable {
+                        self.jumpBallSound.run(.stop())
                         self.jumpBallSound.run(.changeVolume(to: self.volumeSound, duration: 0))
                         self.jumpBallSound.run(.play())
                         self.jumpBoostAvailable = false
@@ -471,6 +477,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
                     
                 case "PinballDup":
                     if self.jumpBoostAvailable {
+                        self.jumpBallSound.run(.stop())
                         self.jumpBallSound.run(.changeVolume(to: self.volumeSound, duration: 0))
                         self.jumpBallSound.run(.play())
                         self.jumpBoostAvailable = false
@@ -557,10 +564,12 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
 
             switch bumper.name {
             case "bumperRight":
+                self.bumperSound.run(.stop())
                 self.bumperSound.run(.changeVolume(to: self.volumeSound, duration: 0))
                 self.bumperSound.run(.play())
                 impulse = CGVector(dx: -80, dy: 0)
             case "bumperLeft":
+                self.bumperSound.run(.stop())
                 self.bumperSound.run(.changeVolume(to: self.volumeSound, duration: 0))
                 self.bumperSound.run(.play())
                 impulse = CGVector(dx: 80, dy: 0)
@@ -584,6 +593,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         }
         
         if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.meteor {
+            self.hittingMeteorSound.run(.stop())
             self.hittingMeteorSound.run(.changeVolume(to: self.volumeSound, duration: 0))
             self.hittingMeteorSound.run(.play())
             meteorApplyImpulse()
@@ -621,11 +631,13 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.bossAttack {
             if otherNode.name == "pushAttack" {
+                self.hittingMeteorSound.run(.stop())
                 self.gettingHitPushSound.run(.changeVolume(to: self.volumeSound, duration: 0))
                 self.gettingHitPushSound.run(.play())
                 ball.physicsBody?.applyImpulse(CGVector(dx: (bossPushAttack.physicsBody?.velocity.dx)! * 200, dy: (bossPushAttack.physicsBody?.velocity.dx)! * 200))
             }
             else {
+                self.gettingHitLaserSound.run(.stop())
                 self.gettingHitLaserSound.run(.changeVolume(to: self.volumeSound, duration: 0))
                 self.gettingHitLaserSound.run(.play())
                 ballHealth -= 100
@@ -666,6 +678,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.loseBox {
             if dupBallThere {
+                self.ballReviveSound.run(.stop())
                 self.ballReviveSound.run(.changeVolume(to: self.volumeSound, duration: 0))
                 self.ballReviveSound.run(.play())
                 for node in self.children {
@@ -707,6 +720,27 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
+    func meteorLoseBoxCollision(_ contact: SKPhysicsContact){
+        let otherNode: SKNode
+        
+        if contact.bodyA.categoryBitMask == PhysicsCategory.meteor {
+            otherNode = contact.bodyB.node!
+        } else if contact.bodyB.categoryBitMask == PhysicsCategory.meteor {
+            otherNode = contact.bodyA.node!
+        } else {
+            return
+        }
+        
+        if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.loseBox {
+            for node in self.children {
+                if node.name == "meteor" {
+                    node.removeFromParent()
+                    meteorThere = false
+                }
+            }
+        }
+    }
+    
     func meteorApplyImpulse(){
         let differenceX = boss.position.x - meteor.position.x
         let differenceY = boss.position.y - meteor.position.y
@@ -735,11 +769,15 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func addBackground(){
-        let bg = SKSpriteNode(imageNamed: "BossStage")
+        bg = SKSpriteNode(imageNamed: "BossStage")
+        let bgWalls = SKSpriteNode(imageNamed: "BossStageWalls")
         bg.position = CGPoint(x: size.width / 2, y: size.height / 2)
         bg.size = self.size
+        bgWalls.size = self.size
         bg.zPosition = -1
+        bgWalls.position = CGPoint(x: size.width / 2, y: size.height / 2)
         addChild(bg)
+        addChild(bgWalls)
     }
     
     func addLoseBox(){
@@ -763,13 +801,14 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         let body = SKPhysicsBody(circleOfRadius: meteor.size.width / 2)
         let randomX = CGFloat.random(in: ((frame.width / 4)...(3 * (frame.width / 4))))
         let randomY = CGFloat.random(in: ((frame.height / 4)...(2 * (frame.height / 4))))
+        meteor.name = "meteor"
         meteor.physicsBody = body
         meteor.position = CGPoint(x: randomX, y: randomY)
         meteor.physicsBody?.isDynamic = true
         meteor.physicsBody?.affectedByGravity = false
         meteor.physicsBody?.categoryBitMask = PhysicsCategory.meteor
-        meteor.physicsBody?.collisionBitMask = PhysicsCategory.ball | PhysicsCategory.flipper | PhysicsCategory.triangleWall | PhysicsCategory.rectangleWall | PhysicsCategory.bumper | PhysicsCategory.bossEnt | PhysicsCategory.ballDup
-        meteor.physicsBody?.contactTestBitMask = PhysicsCategory.ball | PhysicsCategory.bossEnt | PhysicsCategory.ballDup
+        meteor.physicsBody?.collisionBitMask = PhysicsCategory.ball | PhysicsCategory.flipper | PhysicsCategory.triangleWall | PhysicsCategory.rectangleWall | PhysicsCategory.bumper | PhysicsCategory.bossEnt | PhysicsCategory.ballDup | PhysicsCategory.loseBox
+        meteor.physicsBody?.contactTestBitMask = PhysicsCategory.ball | PhysicsCategory.bossEnt | PhysicsCategory.ballDup | PhysicsCategory.loseBox
         addChild(meteor)
     }
     
