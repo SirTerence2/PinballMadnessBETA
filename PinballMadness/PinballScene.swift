@@ -133,15 +133,6 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     override func didMove(to view: SKView) {
         view.isMultipleTouchEnabled = true
         guard !isSceneSetup else {
-            let transitionToPinball = SKAudioNode(fileNamed: "TeleportationFromPinballToBoss.wav")
-            transitionToPinball.autoplayLooped = false
-            addChild(transitionToPinball)
-            transitionToPinball.run(.stop())
-            transitionToPinball.run(.changeVolume(to: volumeSound, duration: 0))
-            transitionToPinball.run(.play())
-            DispatchQueue.main.asyncAfter(deadline: .now() + 10.0){
-                transitionToPinball.removeFromParent()
-            }
             self.removeAction(forKey: "itemCleanup")
             self.summonedOtherItems = false
             if !self.isRotaActive() {
@@ -1722,7 +1713,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
     
     func addBossItem(){
         print("added boss")
-        let delay = 1 * Double.random(in: 1...3)
+        let delay = 10 * Double.random(in: 1...3)
         if(!summonedOtherItems){
             run(SKAction.sequence([
                 SKAction.wait(forDuration: delay),

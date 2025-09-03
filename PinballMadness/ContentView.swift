@@ -18,6 +18,18 @@ func makeStartupScene() -> StartupScene {
     return scene
 }
 
+func makeInstructionsScene() -> InstructionsScene {
+    let scene = InstructionsScene(size: CGSize(width: 390, height: 844))
+    scene.scaleMode = .resizeFill
+    return scene
+}
+
+func makeCreditsScene() -> CreditsScene {
+    let scene = CreditsScene(size: CGSize(width: 390, height: 844))
+    scene.scaleMode = .resizeFill
+    return scene
+}
+
 func makeSkinsScene() -> SkinsScene {
     let scene = SkinsScene(size: CGSize(width: 390, height: 844))
     scene.scaleMode = .resizeFill
@@ -126,6 +138,8 @@ struct ContentView: View {
     @State private var bossSceneID = UUID()
     @State private var achievementSceneID = UUID()
     @State private var skinsSceneID = UUID()
+    @State private var instructionsSceneID = UUID()
+    @State private var creditsSceneID = UUID()
     
     @State private var isDupBallThere = false
     
@@ -139,10 +153,12 @@ struct ContentView: View {
     
     @State private var pinballScene: PinballScene? = PinballScene(size: CGSize(width: 390, height: 944))
     @State private var startupScene: StartupScene? = makeStartupScene()
+    @State private var instructionsScene: InstructionsScene? = makeInstructionsScene()
     
     @State private var bossScene: BossScene? = nil
     @State private var achievementScene: AchievementScene? = makeAchievementsScene()
     @State private var skinsScene: SkinsScene? = makeSkinsScene()
+    @State private var creditsScene: CreditsScene? = makeCreditsScene()
     
     @State internal var firstAchievementAchieved: Bool = false
     @State internal var secondAchievementAchieved: Bool = false
@@ -291,6 +307,17 @@ struct ContentView: View {
             .resizable()
             .scaledToFill()
         
+        let instructionsButton = Button {
+            sfx.play("ButtonPressed.wav", volume: Float(soundPower))
+            startupScene?.isPaused = true
+            instructionsSceneID = UUID()
+            screenDirection = "instruction"
+        } label: {
+            Image("Instruction_Button")
+                .resizable()
+                .frame(width: 100, height: 100)
+        }
+        
         GeometryReader { geo in
             ZStack{
                 if screenDirection != "pinball" && screenDirection != "boss" {
@@ -314,7 +341,7 @@ struct ContentView: View {
                         if let scene = startupScene {
                             ZStack {
                                 GeometryReader { geometry in
-                                    startupScreenView(geometry: geometry, scene: scene, star: star, settings: settings, background: background, exit: exit, sliders: sliders)
+                                    startupScreenView(geometry: geometry, scene: scene, star: star, settings: settings, background: background, exit: exit, sliders: sliders, instructionsButton: instructionsButton)
                                 }
                             }
                         }
@@ -336,7 +363,7 @@ struct ContentView: View {
                                 } label: {
                                     exit
                                 }
-                                .position(x: 200, y: 830)
+                                .position(x: 195, y: 780)
                             }
                         }
                         if playerLost {
@@ -358,7 +385,7 @@ struct ContentView: View {
                                         } label: {
                                             exit
                                         }
-                                        .position(x: 200, y: 830)
+                                        .position(x: 195, y: 780)
                                     }
                                 }
                             }
@@ -475,6 +502,75 @@ struct ContentView: View {
                         }
                         .position(x: 195, y: 725)
                     }
+                    else if screenDirection == "instruction", let scene = instructionsScene {
+                        GeometryReader { geometry in
+                            SpriteView(scene: scene)
+                                .id(achievementSceneID)
+                                .ignoresSafeArea()
+                            
+                            ScrollView {
+                                VStack(spacing: 50){
+                                    Image("FlipperInstructions")
+                                        .resizable()
+                                        .frame(width: 500, height: 300)
+                                        .offset(x: -65)
+                                    Image("DoublejumpInstructions")
+                                        .resizable()
+                                        .frame(width: 400, height: 300)
+                                        .offset(x: -80, y: -140)
+                                    Image("GameOverInstructions")
+                                        .resizable()
+                                        .frame(width: 500, height: 400)
+                                        .offset(x: -83, y: -300)
+                                    Image("AchievementInstructions")
+                                        .resizable()
+                                        .frame(width: 500, height: 450)
+                                        .offset(x: -64, y: -530)
+                                    Image("ItemInstructions")
+                                        .resizable()
+                                        .frame(width: 500, height: 300)
+                                        .offset(x: -111.5, y: -675)
+                                    Image("PunItemInstructions")
+                                        .resizable()
+                                        .frame(width: 450, height: 250)
+                                        .offset(x: -78, y: -710)
+                                    Image("RotaButtonInstructions")
+                                        .resizable()
+                                        .frame(width: 450, height: 380)
+                                        .offset(x: -88, y: -775)
+                                    Image("BossBattleInstructions")
+                                        .resizable()
+                                        .frame(width: 450, height: 300)
+                                        .offset(x: -84.2, y: -895)
+                                    Button {
+                                        sfx.play("ButtonPressed.wav", volume: Float(soundPower))
+                                        startupScene?.isPaused = false
+                                        screenDirection = "startup"
+                                    } label : {
+                                        exit
+                                    }
+                                    .offset(x: -50, y: -900)
+                                }
+                                .offset(y: 450)
+                                .frame(maxHeight: 2300)
+                            }
+                        }
+                    }
+                    else if screenDirection == "credits", let scene = creditsScene {
+                        GeometryReader { geometry in
+                            SpriteView(scene: scene)
+                                .id(achievementSceneID)
+                                .ignoresSafeArea()
+                            Button {
+                                sfx.play("ButtonPressed.wav", volume: Float(soundPower))
+                                startupScene?.isPaused = false
+                                screenDirection = "startup"
+                            } label: {
+                                exit
+                            }
+                            .position(x: 200, y: 780)
+                        }
+                    }
                 }
                 .frame(width: baseSize.width, height: baseSize.height)
                 .scaleEffect(scale)
@@ -581,7 +677,7 @@ struct ContentView: View {
     }
     
     @ViewBuilder
-    func startupScreenView(geometry: GeometryProxy, scene: StartupScene, star: some View, settings: some View, background: some View, exit: some View, sliders: some View) -> some View {
+    func startupScreenView(geometry: GeometryProxy, scene: StartupScene, star: some View, settings: some View, background: some View, exit: some View, sliders: some View, instructionsButton: some View) -> some View {
         ZStack {
             SpriteView(scene: scene)
                 .id(startupSceneID)
@@ -631,7 +727,7 @@ struct ContentView: View {
                     .resizable()
                     .frame(width: 156, height: 156)
             }
-            .position(x: 195, y: 780)
+            .position(x: 230, y: 790)
             
             Button {
                 sfx.play("ButtonPressed.wav", volume: Float(soundPower))
@@ -639,9 +735,9 @@ struct ContentView: View {
             } label: {
                 Image("Settings_Button")
                     .resizable()
-                    .frame(width: 156, height: 156)
+                    .frame(width: 100, height: 100)
             }
-            .position(x: 195, y: 590)
+            .position(x: 75, y: 800)
             
             Button {
                 sfx.play("ButtonPressed.wav", volume: Float(soundPower))
@@ -653,7 +749,28 @@ struct ContentView: View {
                     .resizable()
                     .frame(width: 98, height: 98)
             }
-            .position(x: 52, y: 770)
+            .position(x: 40, y: 710)
+            
+            if !firstAchievementAchieved && !secondAchievementAchieved && !thirdAchievementAchieved && !fourthAchievementAchieved && !fifthAchievementAchieved {
+                instructionsButton
+                    .position(x: 200, y: 575)
+            }
+            else {
+                instructionsButton
+                    .position(x: 335, y: 625)
+            }
+            
+            Button {
+                sfx.play("ButtonPressed.wav", volume: Float(soundPower))
+                startupScene?.isPaused = true
+                creditsSceneID = UUID()
+                screenDirection = "credits"
+            } label: {
+                Image("Credits_Button")
+                    .resizable()
+                    .frame(width: 100, height: 100)
+            }
+            .position(x: 320, y: 710)
             
             if !firstAchievementAchieved && !secondAchievementAchieved && !thirdAchievementAchieved && !fourthAchievementAchieved && !fifthAchievementAchieved {
                 Button {
@@ -666,7 +783,7 @@ struct ContentView: View {
                         .resizable()
                         .frame(width: 120, height: 120)
                 }
-                .position(x: 330, y: 670)
+                .position(x: 335, y: 625)
             }
             if isSetting {
                 Color.black.opacity(0.8)
@@ -685,7 +802,7 @@ struct ContentView: View {
                 } label: {
                     exit
                 }
-                .position(x: 195, y: 830)
+                .position(x: 195, y: 780)
             }
         }
     }
@@ -848,6 +965,7 @@ struct ContentView: View {
         bossSceneID = UUID()
         
         if let scene = pinballScene {
+            sfx.play("TeleportationFromPinballToBoss.wav", volume: Float(soundPower))
             scene.isPaused = false
             scene.physicsWorld.speed = 1.0
             scene.positionHistory = positionHistory

@@ -903,10 +903,10 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
     
     func addBoss(){
         boss = SKSpriteNode(imageNamed: "BossEntity")
-        boss.size = CGSize(width: 180, height: 180)
+        boss.size = CGSize(width: 320, height: 320)
         
         let body = SKPhysicsBody(circleOfRadius: boss.size.width / 2)
-        boss.position = CGPoint(x: frame.width / 2, y: 670)
+        boss.position = CGPoint(x: 190, y: 670)
         boss.physicsBody = body
         boss.physicsBody?.isDynamic = false
         boss.physicsBody?.affectedByGravity = false

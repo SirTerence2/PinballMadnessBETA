@@ -1,17 +1,17 @@
 //
-//  StartupScene.swift
-//  PinballTrue
+//  CreditsScene.swift
+//  PinballMadness
 //
-//  Created by Muhammad Mahmood on 7/16/25.
+//  Created by Muhammad Mahmood on 9/3/25.
 //
 import UIKit
 import SpriteKit
 
-class StartupScene: SKScene {
+class CreditsScene: SKScene {
     var star: SKSpriteNode!
     
     override func didMove(to view: SKView) {
-        let bg = SKSpriteNode(imageNamed: "Startup_scene")
+        let bg = SKSpriteNode(imageNamed: "CreditsScene")
         bg.size = self.size
         bg.position = CGPoint(x: size.width / 2, y: size.height / 2)
         bg.zPosition = -1
