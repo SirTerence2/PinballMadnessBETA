@@ -1515,7 +1515,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         wall.name = "obstacle"
         wall.size = CGSize(width: 50, height: 50)
         wall.position =  CGPoint(x: wall.size.width / 2, y: 610)
-        wall.physicsBody = SKPhysicsBody(rectangleOf: wall.size)
+        wall.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: 40, height: 40))
         wall.physicsBody!.isDynamic = false
         wall.physicsBody!.affectedByGravity = false
         
@@ -1529,7 +1529,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
         wall.name = "obstacle"
         wall.size = CGSize(width: 50, height: 50)
         wall.position = CGPoint(x: wall.size.width / 2, y: 410)
-        wall.physicsBody = SKPhysicsBody(rectangleOf: wall.size)
+        wall.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: 40, height: 40))
         wall.physicsBody!.isDynamic = false
         wall.physicsBody!.affectedByGravity = false
         
