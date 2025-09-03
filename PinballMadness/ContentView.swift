@@ -810,7 +810,7 @@ struct ContentView: View {
     @ViewBuilder
     func pinballScreenView(geometry: GeometryProxy, scene: PinballScene, settings: some View, background: some View, exit: some View, settingsButton: some View) -> some View {
         ZStack {
-            SpriteView(scene: scene, debugOptions: [.showsPhysics, .showsNodeCount, .showsFPS])
+            SpriteView(scene: scene)
                 .id(pinballSceneID)
                 .ignoresSafeArea()
                 .onReceive(scene.dupPublisher) { value in
