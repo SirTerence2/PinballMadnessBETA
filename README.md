@@ -1,0 +1,1 @@
+Pinball Madness is a space themed pinball game, where the player has to overcome numerous challenges with the goal of surviving for the longest time possible. To assist them, items will spawn randomly and will change the mechanics of the game. The game also features achievements and skins for long term playablity. All the visual assets were made using procreate.
