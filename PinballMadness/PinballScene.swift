@@ -395,7 +395,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                             sprite.position = positionMem
                             sprite.physicsBody?.applyForce(CGVector(dx: 350, dy: 350))
                             self.pistonSound.run(.stop())
-                            self.pistonSound.run(.changeVolume(to: self.volumeSound, duration: 0))
+                            self.pistonSound.run(.changeVolume(to: self.volumeSound * 3/4, duration: 0))
                             self.pistonSound.run(.play())
                         }
                         
@@ -424,7 +424,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                             sprite.position = positionMem
                             sprite.physicsBody?.applyForce(CGVector(dx: -350, dy: 350))
                             self.pistonSound.run(.stop())
-                            self.pistonSound.run(.changeVolume(to: self.volumeSound, duration: 0))
+                            self.pistonSound.run(.changeVolume(to: self.volumeSound * 3/4, duration: 0))
                             self.pistonSound.run(.play())
                         }
                         

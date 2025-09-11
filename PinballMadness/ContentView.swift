@@ -10,7 +10,7 @@ import SpriteKit
 import UIKit
 import Combine
 import AVFAudio
-
+import GoogleMobileAds
 
 func makeStartupScene() -> StartupScene {
     let scene = StartupScene(size: CGSize(width: 390, height: 844))
@@ -180,6 +180,7 @@ struct ContentView: View {
     @AppStorage(DefaultsKey.brightness) private var brightness = 1.0
     
     @State private var positionHistory: [(time: TimeInterval, pos: CGPoint, vel: CGVector?)] = []
+    @State private var bootedGame: Bool = true
     
     @AppStorage(DefaultsKey.achievementsCSV) private var achievementsCSV: String = ""
     
@@ -577,12 +578,6 @@ struct ContentView: View {
                 .position(x: geo.size.width / 2, y: geo.size.height / 2)
             }
         }
-        .onAppear {
-            if let t = trackForScreen(screenDirection) {
-                SFX.shared.switchMusic(to: t, volume: Float(musicPower), crossfade: 0.8)
-            }
-        }
-
         .onChange(of: screenDirection) { newScreen in
             if let t = trackForScreen(newScreen) {
                 SFX.shared.switchMusic(to: t, volume: Float(musicPower), crossfade: 1.2)
@@ -605,6 +600,14 @@ struct ContentView: View {
         }
         .onChange(of: screenDirection) { _ in
             applyPauseStateForCurrentScreen()
+        }
+        .onAppear {
+            InterstitialAdManager.shared.onWillPresent = { [weak pinballScene] in
+                pinballScene?.isPaused = true
+            }
+            InterstitialAdManager.shared.onDidDismiss = { [weak pinballScene] in
+                pinballScene?.isPaused = false
+            }
         }
     }
     
@@ -641,6 +644,9 @@ struct ContentView: View {
                                     }
                                 }
                                 playTimerLabel = String(format: "%02d:%02d", minutes, seconds)
+                            }
+                            .onAppear {
+                                InterstitialAdManager.shared.load()
                             }
                         Text("Time Survived: " + "\n" +  "\t\t  " + playTimerLabel)
                             .font(.system(size: 34 * geo.size.width / 390))
@@ -697,6 +703,11 @@ struct ContentView: View {
                     }
                     if unlocked.contains(.noDamage) {
                         fifthAchievementAchieved = true
+                    }
+                }
+                .onAppear {
+                    if !bootedGame {
+                        InterstitialAdManager.shared.load()
                     }
                 }
             if unlocked.contains(.allPowersActivated) {
@@ -813,6 +824,11 @@ struct ContentView: View {
             SpriteView(scene: scene)
                 .id(pinballSceneID)
                 .ignoresSafeArea()
+                .onAppear {
+                    if bootedGame {
+                        bootedGame = false
+                    }
+                }
                 .onReceive(scene.dupPublisher) { value in
                     isDupBallThere = value
                 }
@@ -1019,6 +1035,19 @@ struct ContentView: View {
         pinballScene?.activatedBossPower = false
         pinballSceneID = UUID()
         screenDirection = "pinball"
+        InterstitialAdManager.shared.onWillPresent = { [self] in
+            DispatchQueue.main.async { self.pinballScene?.isPaused = true }
+        }
+        InterstitialAdManager.shared.onDidDismiss = { [self] in
+            DispatchQueue.main.async { self.pinballScene?.isPaused = false }
+        }
+        
+        let root = topViewController()
+        let presented = InterstitialAdManager.shared.present(from: root)
+        if !presented {
+            pinballScene?.isPaused = false
+            InterstitialAdManager.shared.load()
+        }
     }
 }
 
