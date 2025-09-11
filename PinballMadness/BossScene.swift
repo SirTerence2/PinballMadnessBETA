@@ -344,6 +344,9 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         gettingHitLaserSound.autoplayLooped = false
         addChild(gettingHitLaserSound)
         
+        hittingMeteorSound.autoplayLooped = false
+        addChild(hittingMeteorSound)
+        
         hpLabelBoss.zPosition = 1001
         hpLabelBoss.text = String(bossHealth)
         hpLabelBoss.position = CGPoint(x: 60, y: hpBackground.position.y - 12.5)
@@ -594,8 +597,9 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.meteor {
             self.hittingMeteorSound.run(.stop())
-            self.hittingMeteorSound.run(.changeVolume(to: self.volumeSound, duration: 0))
+            self.hittingMeteorSound.run(.changeVolume(to: self.volumeSound * 2, duration: 0))
             self.hittingMeteorSound.run(.play())
+            print("collided with meteor")
             meteorApplyImpulse()
         }
     }
@@ -631,7 +635,7 @@ class BossScene: SKScene, SKPhysicsContactDelegate {
         
         if otherNode.physicsBody?.categoryBitMask == PhysicsCategory.bossAttack {
             if otherNode.name == "pushAttack" {
-                self.hittingMeteorSound.run(.stop())
+                self.gettingHitPushSound.run(.stop())
                 self.gettingHitPushSound.run(.changeVolume(to: self.volumeSound, duration: 0))
                 self.gettingHitPushSound.run(.play())
                 ball.physicsBody?.applyImpulse(CGVector(dx: (bossPushAttack.physicsBody?.velocity.dx)! * 200, dy: (bossPushAttack.physicsBody?.velocity.dx)! * 200))

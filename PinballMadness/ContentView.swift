@@ -246,6 +246,7 @@ struct ContentView: View {
         let sliders = VStack{
             Slider(value: $musicPower, in: 0...1)
                 .onChange(of: musicPower){
+                    sfx.play("SettingChanged.wav", volume: Float(soundPower))
                     SFX.shared.music?.setVolume(Float(musicPower), fadeDuration: 0)
                 }
                 .offset(y: -25)
@@ -259,6 +260,7 @@ struct ContentView: View {
                 .offset(y: -35)
             Slider(value: $soundPower, in: 0...1)
                 .onChange(of: soundPower){
+                    sfx.play("SettingChanged.wav", volume: Float(soundPower))
                     bossScene?.volumeSound = Float(soundPower)
                     pinballScene?.volumeSound = Float(soundPower)
                 }
@@ -274,6 +276,7 @@ struct ContentView: View {
             //brightness
             Slider(value: $brightness, in: 0...1)
                 .onChange(of: brightness){
+                    sfx.play("SettingChanged.wav", volume: Float(soundPower))
                     bossScene?.backgroundBrightness = Float(brightness)
                     pinballScene?.backgroundBrightness = Float(brightness)
                 }
@@ -567,9 +570,11 @@ struct ContentView: View {
                                 startupScene?.isPaused = false
                                 screenDirection = "startup"
                             } label: {
-                                exit
+                                Image("Exit_button")
+                                    .resizable()
+                                    .frame(width: 100, height: 100)
                             }
-                            .position(x: 200, y: 780)
+                            .position(x: 200, y: 820)
                         }
                     }
                 }
@@ -762,7 +767,7 @@ struct ContentView: View {
             }
             .position(x: 40, y: 710)
             
-            if !firstAchievementAchieved && !secondAchievementAchieved && !thirdAchievementAchieved && !fourthAchievementAchieved && !fifthAchievementAchieved {
+            if !firstAchievementAchieved || !secondAchievementAchieved || !thirdAchievementAchieved || !fourthAchievementAchieved || !fifthAchievementAchieved {
                 instructionsButton
                     .position(x: 200, y: 575)
             }
@@ -783,7 +788,7 @@ struct ContentView: View {
             }
             .position(x: 320, y: 710)
             
-            if !firstAchievementAchieved && !secondAchievementAchieved && !thirdAchievementAchieved && !fourthAchievementAchieved && !fifthAchievementAchieved {
+            if !firstAchievementAchieved || !secondAchievementAchieved || !thirdAchievementAchieved || !fourthAchievementAchieved || !fifthAchievementAchieved {
                 Button {
                     sfx.play("ButtonPressed.wav", volume: Float(soundPower))
                     startupScene?.isPaused = true
