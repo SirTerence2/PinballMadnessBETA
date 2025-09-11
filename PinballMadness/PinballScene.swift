@@ -395,7 +395,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                             sprite.position = positionMem
                             sprite.physicsBody?.applyForce(CGVector(dx: 350, dy: 350))
                             self.pistonSound.run(.stop())
-                            self.pistonSound.run(.changeVolume(to: self.volumeSound * 3/4, duration: 0))
+                            self.pistonSound.run(.changeVolume(to: self.volumeSound * 1/3, duration: 0))
                             self.pistonSound.run(.play())
                         }
                         
@@ -413,7 +413,6 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                         let positionMem = sprite.position
                         
                         sprite.texture = SKTexture(imageNamed: "PistonCompressed")
-                        //self.run(SKAction.playSoundFileNamed("PunCharge.wav", waitForCompletion: false))
                         sprite.xScale = -1
                         sprite.position = CGPoint(x: 390, y: 20)
                         self.addFistProjectile(isRight: true)
@@ -424,7 +423,7 @@ class PinballScene: SKScene, ObservableObject, SKPhysicsContactDelegate{
                             sprite.position = positionMem
                             sprite.physicsBody?.applyForce(CGVector(dx: -350, dy: 350))
                             self.pistonSound.run(.stop())
-                            self.pistonSound.run(.changeVolume(to: self.volumeSound * 3/4, duration: 0))
+                            self.pistonSound.run(.changeVolume(to: self.volumeSound * 1/3, duration: 0))
                             self.pistonSound.run(.play())
                         }
                         
