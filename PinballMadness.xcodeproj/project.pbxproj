@@ -197,6 +197,7 @@
 			buildConfigurationList = 2AFE530D2E347FEC00B2CDEA /* Build configuration list for PBXNativeTarget "PinballMadness" */;
 			buildPhases = (
 				2AFE52E52E347FEB00B2CDEA /* Sources */,
+				2A6CD5612E73E8140063E052 /* Run Script */,
 				2AFE52E62E347FEB00B2CDEA /* Frameworks */,
 				2AFE52E72E347FEB00B2CDEA /* Resources */,
 			);
@@ -352,6 +353,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		2A6CD5612E73E8140063E052 /* Run Script */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 8;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Run Script";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+			shellPath = /bin/sh;
+			shellScript = "# Only run for Release builds (skip Debug)\nif [ \"${CONFIGURATION}\" != \"Release\" ]; then\n  exit 0\nfi\n\nset -e\n\nDEST=\"${DWARF_DSYM_FOLDER_PATH}\"\nSPM_ROOT=\"${BUILD_DIR%Build/*}SourcePackages\"\n\n# Look in both 'artifacts' (binary xcframeworks) and 'checkouts'\nfor dir in \"$SPM_ROOT/artifacts\" \"$SPM_ROOT/checkouts\"; do\n  [ -d \"$dir\" ] || continue\n  # Copy Google Ads & UMP dSYMs if present\n  find \"$dir\" -type d \\( -name \"GoogleMobileAds*.dSYM\" -o -name \"UserMessagingPlatform*.dSYM\" \\) -print0 \\\n  | while IFS= read -r -d '' dsym; do\n      echo \"Copying $(basename \"$dsym\") -> ${DEST}\"\n      rsync -a \"$dsym\" \"$DEST\"\n    done\ndone\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		2AFE52E52E347FEB00B2CDEA /* Sources */ = {
