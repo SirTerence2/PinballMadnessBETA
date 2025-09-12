@@ -14,8 +14,8 @@ final class InterstitialAdManager: NSObject, FullScreenContentDelegate {
     // iOS interstitial test ID:
     // "ca-app-pub-3940256099942544/4411468910"
     // actual:
-    // "ca-app-pub-6417321048011372~8770071026"
-    private let adUnitID = "ca-app-pub-3940256099942544/4411468910"
+    // "ca-app-pub-6417321048011372/1861333153"
+    private let adUnitID = "ca-app-pub-6417321048011372/1861333153"
 
     func load() {
         guard !isLoading, ad == nil else { return }
