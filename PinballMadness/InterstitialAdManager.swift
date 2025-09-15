@@ -15,6 +15,7 @@ final class InterstitialAdManager: NSObject, FullScreenContentDelegate {
     // "ca-app-pub-3940256099942544/4411468910"
     // actual:
     // "ca-app-pub-6417321048011372/1861333153"
+    //ca-app-pub-6417321048011372/1861333153
     private let adUnitID = "ca-app-pub-6417321048011372/1861333153"
 
     func load() {

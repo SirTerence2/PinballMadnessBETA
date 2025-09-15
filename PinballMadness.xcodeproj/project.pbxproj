@@ -197,9 +197,9 @@
 			buildConfigurationList = 2AFE530D2E347FEC00B2CDEA /* Build configuration list for PBXNativeTarget "PinballMadness" */;
 			buildPhases = (
 				2AFE52E52E347FEB00B2CDEA /* Sources */,
-				2A6CD5612E73E8140063E052 /* Run Script */,
 				2AFE52E62E347FEB00B2CDEA /* Frameworks */,
 				2AFE52E72E347FEB00B2CDEA /* Resources */,
+				2A6CD5612E73E8140063E052 /* Run Script */,
 			);
 			buildRules = (
 			);
@@ -372,7 +372,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 			shellPath = /bin/sh;
-			shellScript = "# Only run for Release builds (skip Debug)\nif [ \"${CONFIGURATION}\" != \"Release\" ]; then\n  exit 0\nfi\n\nset -e\n\nDEST=\"${DWARF_DSYM_FOLDER_PATH}\"\nSPM_ROOT=\"${BUILD_DIR%Build/*}SourcePackages\"\n\n# Look in both 'artifacts' (binary xcframeworks) and 'checkouts'\nfor dir in \"$SPM_ROOT/artifacts\" \"$SPM_ROOT/checkouts\"; do\n  [ -d \"$dir\" ] || continue\n  # Copy Google Ads & UMP dSYMs if present\n  find \"$dir\" -type d \\( -name \"GoogleMobileAds*.dSYM\" -o -name \"UserMessagingPlatform*.dSYM\" \\) -print0 \\\n  | while IFS= read -r -d '' dsym; do\n      echo \"Copying $(basename \"$dsym\") -> ${DEST}\"\n      rsync -a \"$dsym\" \"$DEST\"\n    done\ndone\n";
+			shellScript = "# Works with /bin/sh or /bin/bash\n\n# Only run for Release (Archive)\nif [ \"${CONFIGURATION}\" != \"Release\" ]; then\n  echo \"[dSYM copy] Skip: not Release\"\n  exit 0\nfi\n\nDEST=\"${DWARF_DSYM_FOLDER_PATH:-}\"\nif [ -z \"$DEST\" ]; then\n  echo \"[dSYM copy] No DWARF_DSYM_FOLDER_PATH; skipping\"\n  exit 0\nfi\nmkdir -p \"$DEST\"\n\n# SPM root for this build\nSPM_ROOT=\"${BUILD_DIR%Build/*}SourcePackages\"\necho \"[dSYM copy] DEST: $DEST\"\necho \"[dSYM copy] SPM_ROOT: $SPM_ROOT\"\n\n# Search both places SPM uses\ncopied=0\nfor dir in \"$SPM_ROOT/artifacts\" \"$SPM_ROOT/checkouts\"; do\n  if [ -d \"$dir\" ]; then\n    echo \"[dSYM copy] Scanning: $dir\"\n    # Use a pipe instead of process substitution (portable)\n    find \"$dir\" -type d \\( -name \"GoogleMobileAds*.dSYM\" -o -name \"UserMessagingPlatform*.dSYM\" \\) -print0 \\\n    | while IFS= read -r -d '' dsym; do\n        name=\"$(basename \"$dsym\")\"\n        echo \"[dSYM copy] Copying $name -> $DEST\"\n        rsync -a \"$dsym\" \"$DEST\" || true\n        copied=1\n      done\n  else\n    echo \"[dSYM copy] Missing directory: $dir (ok)\"\n  fi\ndone\n\necho \"[dSYM copy] Finished.\"\n# Never fail the build\nexit 0\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -552,6 +552,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = BckgroundImageGeneral;
 				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -584,6 +585,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = BckgroundImageGeneral;
 				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
